@@ -13,6 +13,16 @@ Using these together allows you to easily make and test changes to the Linux ker
 
 ``` make docker ```
 
+#### Update git submodules
+The `linux` directory contains a forked linux kernel source tree as a git submodule. The below commands help you to update it.
+
+```sh
+git submodule init
+
+# This will take some time.
+git submodule update
+```
+
 #### Copy config file to linux folder
 
 ``` cp linux-config/.config ./linux ```
