@@ -26,7 +26,7 @@ Using these together allows you to easily make and test changes to the Linux ker
     ```
  - Run the userspace program to attach the BPF program
     ```sh
-    ./loops
+    ./loops.user
     ```
     Verify if the BPF program is attached using
     ```sh
@@ -34,7 +34,7 @@ Using these together allows you to easily make and test changes to the Linux ker
     ```
  - Trigger the BPF program
     ```sh
-    ./trigger_loops
+    ./trigger_loops.user
     ```
  - Terminate the program using the program ID found before.
     ```sh
