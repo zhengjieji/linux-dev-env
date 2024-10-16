@@ -1,8 +1,8 @@
 BASE_PROJ ?= $(shell pwd)
 LINUX ?= ${BASE_PROJ}/linux
-SSH_PORT ?= "52422"
-NET_PORT ?= "53223"
-GDB_PORT ?= "12431"
+SSH_PORT ?= "52228"
+NET_PORT ?= "52229"
+GDB_PORT ?= "1229"
 .ALWAYS:
 
 all: vmlinux 
