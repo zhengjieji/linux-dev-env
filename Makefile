@@ -1,8 +1,8 @@
 BASE_PROJ ?= $(shell pwd)
 LINUX ?= ${BASE_PROJ}/linux
-SSH_PORT ?= "52222"
-NET_PORT ?= "52223"
-GDB_PORT ?= "1234"
+SSH_PORT ?= "52228"
+NET_PORT ?= "52229"
+GDB_PORT ?= "1229"
 .ALWAYS:
 
 all: vmlinux 
@@ -43,4 +43,16 @@ linux-clean:
 
 enter-docker:
 	docker run --rm -v ${BASE_PROJ}:/linux-dev-env -w /linux-dev-env -it runtime-dev /bin/bash
+
+libbpf:
+	docker run --rm -v ${LINUX}:/linux -w /linux/tools/lib/bpf runtime-dev make -j`nproc`
+
+libbpf-clean:
+	docker run --rm -v ${LINUX}:/linux -w /linux/tools/lib/bpf runtime-dev make clean -j`nproc`
+
+bpftool:
+	docker run --rm -v ${LINUX}:/linux -w /linux/tools/bpf/bpftool runtime-dev make -j`nproc`
+
+bpftool-clean:
+	docker run --rm -v ${LINUX}:/linux -w /linux/tools/bpf/bpftool runtime-dev make clean -j`nproc`
 

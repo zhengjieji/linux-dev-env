@@ -9,6 +9,66 @@ Using these together allows you to easily make and test changes to the Linux ker
 
 ***This repository is cloned and modified from rosalab/(unknown)-kernel***
 
+#### Instructions specific to the termination project (skip if you're looking for the setup instructions)
+
+ - Compile the kernel using the working_config.config
+    ```sh
+    cp working_config.config .config
+    ```
+    To verify, check .config to have CONFIG_HAVE_BPF_TERMINATION=y
+ - Change directory to `bpf-progs`
+    ```sh
+    cd bpf-progs
+    ```
+ - Build
+    ```sh
+    make
+    ```
+ - Run the userspace program to attach the BPF program
+    ```sh
+    ./loops.user
+    ```
+    Verify if the BPF program is attached using
+    ```sh
+    bpftool prog show
+    ```
+ - Trigger the BPF program
+    ```sh
+    ./trigger_loops.user
+    ```
+ - Terminate the program using the program ID found before.
+    ```sh
+    bpftool prog terminate <prog_id>
+    ```
+    Check `dmesg` for similar logs as mentioned below:
+
+    ```sh
+    [  296.332446][  T296] Starting terminate syscall prog_id : 5 at time : 296325433601
+    [  296.334733][  T296] Finished termination syscall at time : 296327720324
+    [  296.336654][  T296] IPI + Termination handler took : 2286723 ns
+    [  299.395261][  T297] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  299.401528][  T297] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  299.404505][  T297] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  302.135727][  T298] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  302.142161][  T298] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  302.145287][  T298] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  407.147189][  T311] Entering bpf_get_numa_node_id at time : 407140176600
+    [  417.149818][  T311] Exiting bpf_get_numa_node_id at time : 417142805869
+    [  417.150385][  T311] Entering bpf_get_numa_node_id at time : 417143373453
+    [  421.519914][  T312] Starting terminate syscall prog_id : 5 at time : 421512901566
+    [  421.522232][    C3] kernel/smp.c sync call to bpf_die
+    [  421.522683][    C3] bpf_die called on [CPU:3] prog:5
+    [  421.523091][    C3] [kernel/bpf/syscall.c:215] Found old_addr to be in bpf_func
+    [  421.523091][    C3] Adding offset:0x2c to dest addr : 0xffffffffa0000674
+    [  421.524177][  T312] Finished termination syscall at time : 421517164842
+    [  421.526034][  T312] IPI + Termination handler took : 4263276 ns
+    [  427.153667][  T311] Exiting bpf_get_numa_node_id at time : 427146654583
+    [  427.154251][  T311] Exiting bpf_prog_run at time : 427147239128
+    [  445.732480][  T313] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  445.739202][  T313] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 0
+    [  445.742556][  T313] processed 2 insns (limit 1000000) max_states_per_insn 0 total_states 0 peak_states 0 mark_read 
+    ```
+
 #### Build Docker Container
 
 ``` make docker ```
