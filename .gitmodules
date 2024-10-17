@@ -1,4 +1,3 @@
 [submodule "linux"]
 	path = linux
 	url = git@github.com:rosalab/linux.git
-	branch = termination_working_code
