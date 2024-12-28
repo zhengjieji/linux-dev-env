@@ -50,9 +50,7 @@ make enter-docker
 ```
 
 #### If you want to debug the kernel using gdb
-```
-make qemu-run-gdb
-```
+
 In an another terminal
 ```
 cd linux
