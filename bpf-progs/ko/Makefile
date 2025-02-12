@@ -1,9 +1,9 @@
-obj-m += reg_kfunc_get_current_pid_tgid.o
+obj-m += reg_kfunc.o
 
 # Enable BTF generation
 KBUILD_CFLAGS += -g -O2
 
-KERNEL_DIR := $(realpath ../linux)
+KERNEL_DIR := $(realpath ../../linux)
 PWD := $(shell pwd)
 
 all:

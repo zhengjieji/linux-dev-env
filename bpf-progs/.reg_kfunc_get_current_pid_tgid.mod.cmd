@@ -1,1 +1,0 @@
-savedcmd_/linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.mod := printf '%s\n'   reg_kfunc_get_current_pid_tgid.o | awk '!x[$$0]++ { print("/linux-dev-env/bpf-progs/"$$0) }' > /linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.mod
