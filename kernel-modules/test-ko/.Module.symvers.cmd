@@ -1,1 +1,0 @@
-savedcmd_/linux-dev-env/kernel-modules/test-ko/Module.symvers :=  scripts/mod/modpost -M -m       -o /linux-dev-env/kernel-modules/test-ko/Module.symvers -T /linux-dev-env/kernel-modules/test-ko/modules.order -i Module.symvers -e 

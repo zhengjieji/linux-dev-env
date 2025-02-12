@@ -35,12 +35,14 @@ MODULE_INFO(retpoline, "Y");
 
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
-	{ 0x122c3a7e, "_printk" },
+	{ 0xbe8fae2d, "register_btf_kfunc_id_set" },
 	{ 0x5b8239ca, "__x86_return_thunk" },
+	{ 0xc5c6d95e, "const_pcpu_hot" },
+	{ 0x122c3a7e, "_printk" },
 	{ 0xee0cf454, "module_layout" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "25426F125146D8E6DF34DAF");
+MODULE_INFO(srcversion, "BE49ECAF18BDD5488AF28AA");

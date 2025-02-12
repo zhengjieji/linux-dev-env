@@ -1,1 +1,0 @@
-savedcmd_/linux-dev-env/kernel-modules/test-ko/minimal_module.mod := printf '%s\n'   minimal_module.o | awk '!x[$$0]++ { print("/linux-dev-env/kernel-modules/test-ko/"$$0) }' > /linux-dev-env/kernel-modules/test-ko/minimal_module.mod

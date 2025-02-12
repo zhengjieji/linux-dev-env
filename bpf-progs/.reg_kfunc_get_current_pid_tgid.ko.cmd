@@ -1,0 +1,1 @@
+savedcmd_/linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.ko /linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.o /linux-dev-env/bpf-progs/reg_kfunc_get_current_pid_tgid.mod.o
