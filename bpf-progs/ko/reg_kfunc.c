@@ -76,7 +76,7 @@ module_init(reg_kfunc_my_get_current_pid_tgid_init);
 module_exit(reg_kfunc_my_get_current_pid_tgid_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Your Name");
+MODULE_AUTHOR("Zhengjie Ji");
 MODULE_DESCRIPTION("Kfunc implementation for my_get_current_pid_tgid");
 MODULE_VERSION("1.0");
 
