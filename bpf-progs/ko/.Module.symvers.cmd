@@ -1,0 +1,1 @@
+savedcmd_/linux-dev-env/bpf-progs/ko/Module.symvers :=  scripts/mod/modpost -M -m       -o /linux-dev-env/bpf-progs/ko/Module.symvers -T /linux-dev-env/bpf-progs/ko/modules.order -i Module.symvers -e 
