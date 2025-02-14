@@ -1,9 +1,10 @@
-savedcmd_reg_kfunc.mod.o := gcc -Wp,-MMD,./.reg_kfunc.mod.o.d -nostdinc -I/linux-dev-env/linux/arch/x86/include -I/linux-dev-env/linux/arch/x86/include/generated -I/linux-dev-env/linux/include -I/linux-dev-env/linux/include -I/linux-dev-env/linux/arch/x86/include/uapi -I/linux-dev-env/linux/arch/x86/include/generated/uapi -I/linux-dev-env/linux/include/uapi -I/linux-dev-env/linux/include/generated/uapi -include /linux-dev-env/linux/include/linux/compiler-version.h -include /linux-dev-env/linux/include/linux/kconfig.h -include /linux-dev-env/linux/include/linux/compiler_types.h -D__KERNEL__ -std=gnu11 -fshort-wchar -funsigned-char -fno-common -fno-PIE -fno-strict-aliasing -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=branch -fno-jump-tables -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -mindirect-branch-cs-prefix -mfunction-return=thunk-extern -fno-jump-tables -fpatchable-function-entry=16,16 -fno-delete-null-pointer-checks -O2 -fno-allow-store-data-races -fstack-protector-strong -fomit-frame-pointer -fno-stack-clash-protection -falign-functions=16 -fstrict-flex-arrays=3 -fno-strict-overflow -fno-stack-check -fconserve-stack -Wall -Wundef -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Werror=strict-prototypes -Wno-format-security -Wno-trigraphs -Wno-frame-address -Wno-address-of-packed-member -Wmissing-declarations -Wmissing-prototypes -Wframe-larger-than=2048 -Wno-main -Wno-dangling-pointer -Wvla -Wno-pointer-sign -Wcast-function-type -Wno-stringop-overflow -Wno-array-bounds -Wno-alloc-size-larger-than -Wimplicit-fallthrough=5 -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wenum-conversion -Wextra -Wunused -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-packed-not-aligned -Wno-format-overflow -Wno-format-truncation -Wno-stringop-truncation -Wno-override-init -Wno-missing-field-initializers -Wno-type-limits -Wno-shift-negative-value -Wno-maybe-uninitialized -Wno-sign-compare -Wno-unused-parameter -g  -DMODULE  -DKBUILD_BASENAME='"reg_kfunc.mod"' -DKBUILD_MODNAME='"reg_kfunc"' -D__KBUILD_MODNAME=kmod_reg_kfunc -c -o reg_kfunc.mod.o reg_kfunc.mod.c   ; /linux-dev-env/linux/tools/objtool/objtool --hacks=jump_label --hacks=noinstr --hacks=skylake --ibt --orc --retpoline --rethunk --static-call --uaccess --prefix=16  --link  --module reg_kfunc.mod.o
+savedcmd_.module-common.o := gcc -Wp,-MMD,./..module-common.o.d -nostdinc -I/linux-dev-env/linux/arch/x86/include -I/linux-dev-env/linux/arch/x86/include/generated -I/linux-dev-env/linux/include -I/linux-dev-env/linux/include -I/linux-dev-env/linux/arch/x86/include/uapi -I/linux-dev-env/linux/arch/x86/include/generated/uapi -I/linux-dev-env/linux/include/uapi -I/linux-dev-env/linux/include/generated/uapi -include /linux-dev-env/linux/include/linux/compiler-version.h -include /linux-dev-env/linux/include/linux/kconfig.h -include /linux-dev-env/linux/include/linux/compiler_types.h -D__KERNEL__ -std=gnu11 -fshort-wchar -funsigned-char -fno-common -fno-PIE -fno-strict-aliasing -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=branch -fno-jump-tables -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -mindirect-branch-cs-prefix -mfunction-return=thunk-extern -fno-jump-tables -fpatchable-function-entry=16,16 -fno-delete-null-pointer-checks -O2 -fno-allow-store-data-races -fstack-protector-strong -fomit-frame-pointer -fno-stack-clash-protection -falign-functions=16 -fstrict-flex-arrays=3 -fno-strict-overflow -fno-stack-check -fconserve-stack -Wall -Wundef -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Werror=strict-prototypes -Wno-format-security -Wno-trigraphs -Wno-frame-address -Wno-address-of-packed-member -Wmissing-declarations -Wmissing-prototypes -Wframe-larger-than=2048 -Wno-main -Wno-dangling-pointer -Wvla -Wno-pointer-sign -Wcast-function-type -Wno-stringop-overflow -Wno-array-bounds -Wno-alloc-size-larger-than -Wimplicit-fallthrough=5 -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wenum-conversion -Wextra -Wunused -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-packed-not-aligned -Wno-format-overflow -Wno-format-truncation -Wno-stringop-truncation -Wno-override-init -Wno-missing-field-initializers -Wno-type-limits -Wno-shift-negative-value -Wno-maybe-uninitialized -Wno-sign-compare -Wno-unused-parameter -g  -DMODULE  -DKBUILD_BASENAME='".module_common"' -DKBUILD_MODNAME='".module_common.o"' -D__KBUILD_MODNAME=kmod_.module_common.o -c -o .module-common.o /linux-dev-env/linux/scripts/module-common.c   ; /linux-dev-env/linux/tools/objtool/objtool --hacks=jump_label --hacks=noinstr --hacks=skylake --ibt --orc --retpoline --rethunk --static-call --uaccess --prefix=16  --link  --module .module-common.o
 
-source_reg_kfunc.mod.o := reg_kfunc.mod.c
+source_.module-common.o := /linux-dev-env/linux/scripts/module-common.c
 
-deps_reg_kfunc.mod.o := \
-    $(wildcard include/config/MODULE_UNLOAD) \
+deps_.module-common.o := \
+    $(wildcard include/config/UNWINDER_ORC) \
+    $(wildcard include/config/MITIGATION_RETPOLINE) \
   /linux-dev-env/linux/include/linux/compiler-version.h \
     $(wildcard include/config/CC_VERSION_TEXT) \
   /linux-dev-env/linux/include/linux/kconfig.h \
@@ -25,7 +26,6 @@ deps_reg_kfunc.mod.o := \
     $(wildcard include/config/CC_HAS_ASM_INLINE) \
   /linux-dev-env/linux/include/linux/compiler_attributes.h \
   /linux-dev-env/linux/include/linux/compiler-gcc.h \
-    $(wildcard include/config/MITIGATION_RETPOLINE) \
     $(wildcard include/config/ARCH_USE_BUILTIN_BSWAP) \
     $(wildcard include/config/SHADOW_CALL_STACK) \
     $(wildcard include/config/KCOV) \
@@ -52,6 +52,7 @@ deps_reg_kfunc.mod.o := \
     $(wildcard include/config/HAVE_STATIC_CALL_INLINE) \
     $(wildcard include/config/KUNIT) \
     $(wildcard include/config/PRINTK_INDEX) \
+    $(wildcard include/config/MODULE_UNLOAD) \
     $(wildcard include/config/CONSTRUCTORS) \
     $(wildcard include/config/FUNCTION_ERROR_INJECTION) \
     $(wildcard include/config/DYNAMIC_DEBUG_CORE) \
@@ -1046,16 +1047,48 @@ deps_reg_kfunc.mod.o := \
   /linux-dev-env/linux/include/asm-generic/error-injection.h \
   /linux-dev-env/linux/include/linux/dynamic_debug.h \
   /linux-dev-env/linux/arch/x86/include/asm/module.h \
-    $(wildcard include/config/UNWINDER_ORC) \
   /linux-dev-env/linux/include/asm-generic/module.h \
     $(wildcard include/config/HAVE_MOD_ARCH_SPECIFIC) \
     $(wildcard include/config/MODULES_USE_ELF_REL) \
     $(wildcard include/config/MODULES_USE_ELF_RELA) \
-  /linux-dev-env/linux/include/linux/export-internal.h \
-    $(wildcard include/config/PARISC) \
+  /linux-dev-env/linux/include/linux/build-salt.h \
+    $(wildcard include/config/BUILD_SALT) \
+  /linux-dev-env/linux/include/linux/elfnote.h \
+  /linux-dev-env/linux/include/linux/elfnote-lto.h \
+    $(wildcard include/config/LTO) \
+  /linux-dev-env/linux/include/linux/vermagic.h \
+    $(wildcard include/config/PREEMPT_BUILD) \
+  /linux-dev-env/linux/include/generated/utsrelease.h \
+  /linux-dev-env/linux/arch/x86/include/asm/vermagic.h \
+    $(wildcard include/config/M486SX) \
+    $(wildcard include/config/M486) \
+    $(wildcard include/config/M586) \
+    $(wildcard include/config/M586TSC) \
+    $(wildcard include/config/M586MMX) \
+    $(wildcard include/config/MCORE2) \
+    $(wildcard include/config/M686) \
+    $(wildcard include/config/MPENTIUMII) \
+    $(wildcard include/config/MPENTIUMIII) \
+    $(wildcard include/config/MPENTIUMM) \
+    $(wildcard include/config/MPENTIUM4) \
+    $(wildcard include/config/MK6) \
+    $(wildcard include/config/MK7) \
+    $(wildcard include/config/MK8) \
+    $(wildcard include/config/MELAN) \
+    $(wildcard include/config/MCRUSOE) \
+    $(wildcard include/config/MEFFICEON) \
+    $(wildcard include/config/MWINCHIPC6) \
+    $(wildcard include/config/MWINCHIP3D) \
+    $(wildcard include/config/MCYRIXIII) \
+    $(wildcard include/config/MVIAC3_2) \
+    $(wildcard include/config/MVIAC7) \
+    $(wildcard include/config/MGEODEGX1) \
+    $(wildcard include/config/MGEODE_LX) \
+  /linux-dev-env/linux/arch/x86/include/asm/orc_header.h \
+  /linux-dev-env/linux/arch/x86/include/generated/asm/orc_hash.h \
 
-reg_kfunc.mod.o: $(deps_reg_kfunc.mod.o)
+.module-common.o: $(deps_.module-common.o)
 
-$(deps_reg_kfunc.mod.o):
+$(deps_.module-common.o):
 
-reg_kfunc.mod.o: $(wildcard /linux-dev-env/linux/tools/objtool/objtool)
+.module-common.o: $(wildcard /linux-dev-env/linux/tools/objtool/objtool)

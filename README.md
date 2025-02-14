@@ -10,49 +10,68 @@ Using these together allows you to easily make and test changes to the Linux ker
 ***This repository is cloned and modified from rosalab/(unknown)-kernel***
 
 #### Build Docker Container
+```sh
+make docker 
+```
 
-``` make docker ```
-
-#### Update git submodules
-The `linux` directory contains a forked linux kernel source tree as a git submodule. The below commands help you to update it.
+#### Download Linux
+The `linux` directory contains a forked linux kernel source tree.
 
 ```sh
-git submodule init
+git clone https://github.com/torvalds/linux.git
 
-# This will take some time.
-git submodule update
+# 进入克隆下来的仓库目录
+cd linux
+
+# 切换到 v6.13 标签
+git checkout v6.13
 ```
 
 #### Copy config file to linux folder
-
-``` cp linux-config/.config ./linux ```
 Feel free to make changes to the config based on the usecase
 
-#### Build linux
+```sh
+cp linux-config/.config ./linux
 
+# convert to new config
+sudo make olddefconfig
 ```
-make vmlinux
+
+#### Build linux
+```sh
+sudo make vmlinux
+```
+
+#### Build dependencies
+```sh
+sudo make headers-install
+
+sudo make modules-install
+
+sudo make libbpf
+
+sudo make bpftool
 ```
 
 #### Run Qemu
-```
+```sh
 make qemu-run
 ```
 
 #### If you want to ssh into the qemu
-```
+```sh
 make qemu-ssh
 ```
 
 #### If you want to enter the docker container where qemu is running
-```
+```sh
 make enter-docker
 ```
 
 #### If you want to debug the kernel using gdb
 
 In an another terminal
-```
+```sh
 cd linux
 gdb vmlinux
 target remote:1234

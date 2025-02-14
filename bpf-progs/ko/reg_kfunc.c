@@ -1,13 +1,6 @@
-/*
- * 文件：reg_kfunc_my_get_current_pid_tgid.c
- * 说明：通过内核模块注册一个 kfunc 实现，
- *       新符号名为 my_get_current_pid_tgid，与内核内置的
- *       bpf_get_current_pid_tgid 不冲突。
- */
-
-#include <linux/init.h>       // 模块初始化宏
-#include <linux/module.h>     // 模块加载接口
-#include <linux/kernel.h>     // 内核日志宏
+#include <linux/init.h>       // Macros for module initialization
+#include <linux/module.h>     // Core header for loading modules
+#include <linux/kernel.h>     // Kernel logging macros
 #include <linux/bpf.h>
 #include <linux/btf.h>
 #include <linux/btf_ids.h>
@@ -16,27 +9,22 @@
 /* Declare the kfunc prototype */
 __bpf_kfunc u64 my_get_current_pid_tgid(void);
 
-/* 使用内核提供的 kfunc 定义宏 */
+/* Begin kfunc definitions */
 __bpf_kfunc_start_defs();
 
-/* 定义 kfunc 实现，功能与 bpf_get_current_pid_tgid() 相同，
- * 但使用新的符号名 my_get_current_pid_tgid */
+/* 定义 kfunc 实现，功能与 bpf_get_current_pid_tgid() 相同*/
 __bpf_kfunc u64 my_get_current_pid_tgid(void)
 {
     struct task_struct *t = current;
     return ((u64)t->tgid << 32) | (u32)t->pid;
 }
 
-/* 导出该符号，使得 BTF 信息可以被内核全局查找到 */
-EXPORT_SYMBOL_GPL(my_get_current_pid_tgid);
-
+/* End kfunc definitions */
 __bpf_kfunc_end_defs();
 
-/*
- * 定义 BTF kfunc ID 集，将 my_get_current_pid_tgid() 加入其中
- */
+/* Define the BTF kfuncs ID set */
 BTF_KFUNCS_START(bpf_kfunc_my_get_current_pid_tgid_ids_set)
-    BTF_ID_FLAGS(func, my_get_current_pid_tgid)
+BTF_ID_FLAGS(func, my_get_current_pid_tgid)
 BTF_KFUNCS_END(bpf_kfunc_my_get_current_pid_tgid_ids_set)
 
 /* 定义 kfunc ID 集注册结构 */
@@ -79,4 +67,3 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Zhengjie Ji");
 MODULE_DESCRIPTION("Kfunc implementation for my_get_current_pid_tgid");
 MODULE_VERSION("1.0");
-

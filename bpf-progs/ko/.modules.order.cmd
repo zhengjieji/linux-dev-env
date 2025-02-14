@@ -1,1 +1,1 @@
-savedcmd_/linux-dev-env/bpf-progs/ko/modules.order := {   echo /linux-dev-env/bpf-progs/ko/reg_kfunc.o; :; } > /linux-dev-env/bpf-progs/ko/modules.order
+savedcmd_modules.order := {   echo reg_kfunc.o; :; } > modules.order
