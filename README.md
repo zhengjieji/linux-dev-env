@@ -23,16 +23,6 @@ git checkout v6.13
 
 ```sh
 cp linux-config/.config ./linux
-
-# convert to new config
-sudo make olddefconfig
-
-cd ..
-```
-
-#### Build Linux
-```sh
-sudo make vmlinux
 ```
 
 #### Build Dependencies
@@ -40,7 +30,15 @@ sudo make vmlinux
 sudo make headers-install
 
 sudo make modules-install
+```
 
+#### Build Linux
+```sh
+sudo make vmlinux
+```
+
+#### Build Tools
+```sh
 sudo make libbpf
 
 sudo make bpftool

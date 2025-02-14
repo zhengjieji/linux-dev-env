@@ -1,1 +1,0 @@
-savedcmd_reg_kfunc.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /linux-dev-env/linux/scripts/module.lds -o reg_kfunc.ko reg_kfunc.o reg_kfunc.mod.o .module-common.o
