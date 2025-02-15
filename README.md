@@ -1,58 +1,69 @@
 # Linux Development Environment
-This repository contains *one* workflow for building and modifying the Linux kernel.
-It consists of two main components.
-The first is a docker container that contains all the requirements to build the Linux kernel, as well
-    as the requirements to run QEMU.
-The second is a QEMU  script that boots a virtual machine running a custom version of the Linux kernel.
-Using these together allows you to easily make and test changes to the Linux kernel without needing to
-    manage all the packages locally.
+This repository contains *one* workflow for building and modifying the Linux kernel. It consists of two main components. The first is a docker container that contains all the requirements to build the Linux kernel, as well as the requirements to run QEMU. The second is a QEMU  script that boots a virtual machine running a custom version of the Linux kernel. Using these together allows you to easily make and test changes to the Linux kernel without needing to manage all the packages locally.
 
 ***This repository is cloned and modified from rosalab/(unknown)-kernel***
 
 #### Build Docker Container
+```sh
+sudo make docker 
+```
 
-``` make docker ```
-
-#### Update git submodules
-The `linux` directory contains a forked linux kernel source tree as a git submodule. The below commands help you to update it.
+#### Download Linux
 
 ```sh
-git submodule init
+git clone https://github.com/torvalds/linux.git
 
-# This will take some time.
-git submodule update
+cd linux
+
+git checkout v6.13
+
+cd ..
 ```
 
-#### Copy config file to linux folder
+#### Copy Config File to Linux Folder
 
-``` cp linux-config/.config ./linux ```
-Feel free to make changes to the config based on the usecase
-
-#### Build linux
-
-```
-make vmlinux
+```sh
+cp linux-config/.config ./linux
 ```
 
-#### Run Qemu
+#### Build Dependencies
+```sh
+sudo make headers-install
+
+sudo make modules-install
 ```
+
+#### Build Linux
+```sh
+sudo make vmlinux
+```
+
+#### Build Tools
+```sh
+sudo make libbpf
+
+sudo make bpftool
+```
+
+#### Run QEMU
+```sh
 make qemu-run
 ```
 
-#### If you want to ssh into the qemu
-```
+#### If you want to ssh into the QEMU
+```sh
 make qemu-ssh
 ```
 
-#### If you want to enter the docker container where qemu is running
-```
+#### If you want to enter the docker container where QEMU is running
+```sh
 make enter-docker
 ```
 
-#### If you want to debug the kernel using gdb
+#### If you want to debug the kernel using GDB
 
 In an another terminal
-```
+```sh
 cd linux
 gdb vmlinux
 target remote:1234
@@ -66,13 +77,13 @@ By default host port 52223 is connected to port 52223 inside the QEMU virtual ma
 If you need to be able to connect to more than one port (or a specific port) on your custom kernel from the host, you will have to add new rules.
 The needed rules are in `q-script/yifei-q` and in the Makefile.
 
-### Makefile modifications
+### Makefile Modifications
 You must add a line that maps a host port to a Docker port.
 In the Makefile you must add a line 
     ```-p 127.0.0.1:HOST_PORT:DOCKER_PORT```
 This will map the host port to the docker port.
 
-### q-script modifications
+### q-script Modifications
 You must modify the q-script to connect the DOCKER_PORT to a QEMU_PORT.
 In the q-script you must append a new rule.
 Find the line that starts with `"net += -netdev user..."`.
