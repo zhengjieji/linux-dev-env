@@ -43,8 +43,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // Attach 程序到 kprobe "__do_sys_getcwd"
-    struct bpf_link *link = bpf_program__attach_kprobe(prog, false, "__do_sys_getcwd");
+    // Attach 程序到 kprobe "__x64_sys_getcwd"
+    struct bpf_link *link = bpf_program__attach_kprobe(prog, false, "__x64_sys_getcwd");
     if (!link) {
         fprintf(stderr, "Failed to attach BPF program\n");
         return 1;

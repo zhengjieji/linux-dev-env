@@ -7,7 +7,7 @@
  * 使用 kprobe 挂载，调用内置 helper bpf_get_current_pid_tgid，
  * 并通过 bpf_printk 打印返回值。
  */
-SEC("kprobe/__do_sys_getcwd")
+SEC("kprobe/__x64_sys_getcwd")
 int test_helper_prog(struct pt_regs *ctx)
 {
     __u64 pid_tgid = bpf_get_current_pid_tgid();

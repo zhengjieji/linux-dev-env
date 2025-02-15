@@ -13,7 +13,7 @@ char LICENSE[] SEC("license") = "Dual BSD/GPL";
 /*
  * 调用自定义 kfunc my_get_current_pid_tgid()，打印输出 TEST_KFUNC 标记信息
  */
-SEC("kprobe/__do_sys_getcwd")
+SEC("kprobe/__x64_sys_getcwd")
 int test_kfunc_prog(struct pt_regs *ctx)
 {
     __u64 pid_tgid = my_get_current_pid_tgid();
