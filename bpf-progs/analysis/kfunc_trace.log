@@ -1,0 +1,668 @@
+# tracer: function_graph
+#
+# CPU  DURATION                  FUNCTION CALLS
+# |     |   |                     |   |   |   |
+ 3)               |  x64_sys_call() {
+ 3)               |    __x64_sys_bpf() {
+ 3)               |      __sys_bpf() {
+ 3)   0.103 us    |        bpf_check_uarg_tail_zero();
+ 3)   0.068 us    |        security_bpf();
+ 3)               |        bpf_prog_load() {
+ 3)               |          bpf_token_capable() {
+ 3)               |            ns_capable() {
+ 3)               |              security_capable() {
+ 3)   0.081 us    |                cap_capable();
+ 3)   0.232 us    |              }
+ 3)   0.391 us    |            }
+ 3)   0.610 us    |          }
+ 3)               |          bpf_token_capable() {
+ 3)               |            ns_capable() {
+ 3)               |              security_capable() {
+ 3)   0.070 us    |                cap_capable();
+ 3)   0.223 us    |              }
+ 3)   0.374 us    |            }
+ 3)   0.534 us    |          }
+ 3)               |          bpf_prog_alloc() {
+ 3)               |            bpf_prog_alloc_no_stats() {
+ 3)               |              __vmalloc_noprof() {
+ 3)               |                __vmalloc_node_noprof() {
+ 3)               |                  __vmalloc_node_range_noprof() {
+ 3)               |                    __get_vm_area_node() {
+ 3)               |                      __kmalloc_cache_node_noprof() {
+ 3)   0.071 us    |                        __cond_resched();
+ 3)   0.408 us    |                      }
+ 3)               |                      alloc_vmap_area() {
+ 3)   0.071 us    |                        __cond_resched();
+ 3)               |                        kmem_cache_alloc_node_noprof() {
+ 3)   0.071 us    |                          __cond_resched();
+ 3)   0.666 us    |                        }
+ 3)   0.073 us    |                        _raw_spin_lock();
+ 3)   0.074 us    |                        _raw_spin_unlock();
+ 3)   0.192 us    |                        _raw_spin_lock();
+ 3)   0.375 us    |                        insert_vmap_area();
+ 3)   0.074 us    |                        _raw_spin_unlock();
+ 3)   4.788 us    |                      }
+ 3)   5.545 us    |                    }
+ 3)               |                    __kmalloc_node_noprof() {
+ 3)   0.071 us    |                      __cond_resched();
+ 3)   0.331 us    |                    }
+ 3)               |                    alloc_pages_bulk_array_mempolicy_noprof() {
+ 3)   0.081 us    |                      policy_nodemask();
+ 3)               |                      alloc_pages_bulk_noprof() {
+ 3)               |                        __alloc_pages_noprof() {
+ 3)   0.068 us    |                          __cond_resched();
+ 3)               |                          get_page_from_freelist() {
+ 3)   0.094 us    |                            _raw_spin_trylock();
+ 3)   0.077 us    |                            _raw_spin_unlock();
+ 3)   1.150 us    |                          }
+ 3)   1.957 us    |                        }
+ 3)   2.218 us    |                      }
+ 3)   3.033 us    |                    }
+ 3)   0.070 us    |                    __cond_resched();
+ 3)   0.665 us    |                    __vmap_pages_range_noflush();
+ 3) + 10.564 us   |                  }
+ 3) + 10.720 us   |                }
+ 3) + 10.948 us   |              }
+ 3)               |              __kmalloc_cache_noprof() {
+ 3)   0.070 us    |                __cond_resched();
+ 3)   0.557 us    |              }
+ 3)               |              pcpu_alloc_noprof() {
+ 3)               |                mutex_lock_killable() {
+ 3)   0.069 us    |                  __cond_resched();
+ 3)   0.221 us    |                }
+ 3)   0.195 us    |                _raw_spin_lock_irqsave();
+ 3)               |                pcpu_find_block_fit() {
+ 3)   0.261 us    |                  pcpu_next_fit_region.constprop.0();
+ 3)   0.423 us    |                }
+ 3)               |                pcpu_alloc_area() {
+ 3)   0.072 us    |                  pcpu_chunk_slot();
+ 3)   0.168 us    |                  pcpu_block_update_hint_alloc();
+ 3)   0.070 us    |                  pcpu_chunk_relocate();
+ 3)   0.904 us    |                }
+ 3)   0.083 us    |                _raw_spin_unlock_irqrestore();
+ 3)   0.073 us    |                mutex_unlock();
+ 3)   0.072 us    |                mem_cgroup_kmem_disabled();
+ 3)   0.076 us    |                pcpu_memcg_post_alloc_hook();
+ 3)   3.228 us    |              }
+ 3)   0.071 us    |              __mutex_init();
+ 3)   0.070 us    |              __mutex_init();
+ 3)   0.071 us    |              __mutex_init();
+ 3) + 16.222 us   |            }
+ 3)               |            pcpu_alloc_noprof() {
+ 3)               |              mutex_lock_killable() {
+ 3)   0.071 us    |                __cond_resched();
+ 3)   0.221 us    |              }
+ 3)   0.079 us    |              _raw_spin_lock_irqsave();
+ 3)               |              pcpu_find_block_fit() {
+ 3)   0.071 us    |                pcpu_next_fit_region.constprop.0();
+ 3)   0.226 us    |              }
+ 3)               |              pcpu_alloc_area() {
+ 3)   0.069 us    |                pcpu_chunk_slot();
+ 3)               |                pcpu_block_update_hint_alloc() {
+ 3)               |                  pcpu_block_refresh_hint() {
+ 3)   0.074 us    |                    pcpu_block_update();
+ 3)   0.267 us    |                  }
+ 3)               |                  pcpu_chunk_refresh_hint() {
+ 3)   0.080 us    |                    pcpu_next_md_free_region();
+ 3)   0.070 us    |                    pcpu_block_update();
+ 3)   0.071 us    |                    pcpu_next_md_free_region();
+ 3)   0.554 us    |                  }
+ 3)   1.073 us    |                }
+ 3)   0.068 us    |                pcpu_chunk_relocate();
+ 3)   1.581 us    |              }
+ 3)   0.075 us    |              _raw_spin_unlock_irqrestore();
+ 3)   0.072 us    |              mutex_unlock();
+ 3)   0.085 us    |              mem_cgroup_kmem_disabled();
+ 3)   0.069 us    |              pcpu_memcg_post_alloc_hook();
+ 3)   3.181 us    |            }
+ 3) + 19.960 us   |          }
+ 3)   0.216 us    |          ktime_get_with_offset();
+ 3)   0.074 us    |          bpf_obj_name_cpy();
+ 3)   0.070 us    |          security_bpf_prog_load();
+ 3)               |          bpf_check() {
+ 3)   0.099 us    |            ktime_get();
+ 3)               |            __kvmalloc_node_noprof() {
+ 3)               |              __kmalloc_node_noprof() {
+ 3)               |                __kmalloc_large_node_noprof() {
+ 3)               |                  ___kmalloc_large_node() {
+ 3)               |                    __alloc_pages_noprof() {
+ 3)   0.070 us    |                      __cond_resched();
+ 3)               |                      get_page_from_freelist() {
+ 3)   0.179 us    |                        __zone_watermark_ok();
+ 3)   0.083 us    |                        _raw_spin_trylock();
+ 3)   0.075 us    |                        _raw_spin_unlock();
+ 3)   0.429 us    |                        prep_compound_page();
+ 3)   3.645 us    |                      }
+ 3)   3.959 us    |                    }
+ 3)               |                    __lruvec_stat_mod_folio() {
+ 3)   0.068 us    |                      __rcu_read_lock();
+ 3)   0.072 us    |                      __rcu_read_unlock();
+ 3)   0.096 us    |                      __mod_node_page_state();
+ 3)   0.756 us    |                    }
+ 3)   4.961 us    |                  }
+ 3)   5.231 us    |                }
+ 3)   5.536 us    |              }
+ 3)   5.704 us    |            }
+ 3)               |            vzalloc_noprof() {
+ 3)               |              __vmalloc_node_noprof() {
+ 3)               |                __vmalloc_node_range_noprof() {
+ 3)               |                  __get_vm_area_node() {
+ 3)               |                    __kmalloc_cache_node_noprof() {
+ 3)   0.069 us    |                      __cond_resched();
+ 3)   0.240 us    |                    }
+ 3)               |                    alloc_vmap_area() {
+ 3)   0.070 us    |                      __cond_resched();
+ 3)               |                      kmem_cache_alloc_node_noprof() {
+ 3)   0.069 us    |                        __cond_resched();
+ 3)   0.235 us    |                      }
+ 3)   0.073 us    |                      _raw_spin_lock();
+ 3)   0.076 us    |                      _raw_spin_unlock();
+ 3)   0.168 us    |                      _raw_spin_lock();
+ 3)   0.318 us    |                      insert_vmap_area();
+ 3)   0.073 us    |                      _raw_spin_unlock();
+ 3)   1.761 us    |                    }
+ 3)   2.252 us    |                  }
+ 3)               |                  __kmalloc_node_noprof() {
+ 3)   0.069 us    |                    __cond_resched();
+ 3)   0.254 us    |                  }
+ 3)               |                  alloc_pages_bulk_array_mempolicy_noprof() {
+ 3)   0.079 us    |                    policy_nodemask();
+ 3)               |                    alloc_pages_bulk_noprof() {
+ 3)               |                      __alloc_pages_noprof() {
+ 3)   0.069 us    |                        __cond_resched();
+ 3)               |                        get_page_from_freelist() {
+ 3)   0.082 us    |                          _raw_spin_trylock();
+ 3)   0.075 us    |                          _raw_spin_unlock();
+ 3)   0.429 us    |                        }
+ 3)   1.053 us    |                      }
+ 3)   1.207 us    |                    }
+ 3)   1.520 us    |                  }
+ 3)   0.072 us    |                  __cond_resched();
+ 3)   0.191 us    |                  __vmap_pages_range_noflush();
+ 3)   4.780 us    |                }
+ 3)   4.928 us    |              }
+ 3)   5.076 us    |            }
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.071 us    |                  cap_capable();
+ 3)   0.220 us    |                }
+ 3)   0.367 us    |              }
+ 3)   0.517 us    |            }
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.071 us    |                  cap_capable();
+ 3)   0.221 us    |                }
+ 3)   0.389 us    |              }
+ 3)   0.538 us    |            }
+ 3)   0.074 us    |            cpu_mitigations_off();
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.071 us    |                  cap_capable();
+ 3)   0.221 us    |                }
+ 3)   0.369 us    |              }
+ 3)   0.517 us    |            }
+ 3)   0.070 us    |            cpu_mitigations_off();
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.071 us    |                  cap_capable();
+ 3)   0.219 us    |                }
+ 3)   0.368 us    |              }
+ 3)   0.516 us    |            }
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.071 us    |                  cap_capable();
+ 3)   0.218 us    |                }
+ 3)   0.367 us    |              }
+ 3)   0.516 us    |            }
+ 3)   0.072 us    |            bpf_vlog_init();
+ 3)               |            __kvmalloc_node_noprof() {
+ 3)               |              __kmalloc_node_noprof() {
+ 3)   0.069 us    |                __cond_resched();
+ 3)   0.369 us    |              }
+ 3)   0.517 us    |            }
+ 3)               |            add_subprog_and_kfunc() {
+ 3)               |              add_subprog() {
+ 3)   0.165 us    |                find_containing_subprog();
+ 3)   0.576 us    |              }
+ 3)   0.951 us    |            }
+ 3)   0.128 us    |            check_subprogs();
+ 3)               |            bpf_prog_calc_tag() {
+ 3)               |              vmalloc_noprof() {
+ 3)               |                __vmalloc_node_noprof() {
+ 3)               |                  __vmalloc_node_range_noprof() {
+ 3)               |                    __get_vm_area_node() {
+ 3)               |                      __kmalloc_cache_node_noprof() {
+ 3)   0.070 us    |                        __cond_resched();
+ 3)   0.227 us    |                      }
+ 3)               |                      alloc_vmap_area() {
+ 3)   0.070 us    |                        __cond_resched();
+ 3)               |                        kmem_cache_alloc_node_noprof() {
+ 3)   0.069 us    |                          __cond_resched();
+ 3)   0.222 us    |                        }
+ 3)   0.073 us    |                        _raw_spin_lock();
+ 3)   0.075 us    |                        _raw_spin_unlock();
+ 3)   0.074 us    |                        _raw_spin_lock();
+ 3)   0.239 us    |                        insert_vmap_area();
+ 3)   0.075 us    |                        _raw_spin_unlock();
+ 3)   1.563 us    |                      }
+ 3)   2.023 us    |                    }
+ 3)               |                    __kmalloc_node_noprof() {
+ 3)   0.070 us    |                      __cond_resched();
+ 3)   0.225 us    |                    }
+ 3)               |                    alloc_pages_bulk_array_mempolicy_noprof() {
+ 3)   0.077 us    |                      policy_nodemask();
+ 3)               |                      alloc_pages_bulk_noprof() {
+ 3)               |                        __alloc_pages_noprof() {
+ 3)   0.069 us    |                          __cond_resched();
+ 3)               |                          get_page_from_freelist() {
+ 3)   0.083 us    |                            _raw_spin_trylock();
+ 3)   0.075 us    |                            _raw_spin_unlock();
+ 3)   0.408 us    |                          }
+ 3)   0.730 us    |                        }
+ 3)   0.880 us    |                      }
+ 3)   1.192 us    |                    }
+ 3)   0.070 us    |                    __cond_resched();
+ 3)   0.089 us    |                    __vmap_pages_range_noflush();
+ 3)   4.107 us    |                  }
+ 3)   4.256 us    |                }
+ 3)   4.404 us    |              }
+ 3)   0.070 us    |              sha1_init();
+ 3)   0.341 us    |              sha1_transform();
+ 3)               |              vfree() {
+ 3)   0.070 us    |                __cond_resched();
+ 3)               |                vfree.part.0() {
+ 3)               |                  remove_vm_area() {
+ 3)   0.071 us    |                    __cond_resched();
+ 3)               |                    find_unlink_vmap_area() {
+ 3)   0.074 us    |                      _raw_spin_lock();
+ 3)   0.075 us    |                      _raw_spin_unlock();
+ 3)   0.458 us    |                    }
+ 3)               |                    __vunmap_range_noflush() {
+ 3)   0.071 us    |                      p4d_clear_huge();
+ 3)   0.070 us    |                      pud_clear_huge();
+ 3)   0.071 us    |                      pmd_clear_huge();
+ 3)   0.071 us    |                      __cond_resched();
+ 3)   0.913 us    |                    }
+ 3)               |                    free_vmap_area_noflush() {
+ 3)   0.073 us    |                      _raw_spin_lock();
+ 3)   0.525 us    |                      insert_vmap_area();
+ 3)   0.075 us    |                      _raw_spin_unlock();
+ 3)   1.008 us    |                    }
+ 3)   2.865 us    |                  }
+ 3)   0.143 us    |                  __rcu_read_lock();
+ 3)   0.070 us    |                  __rcu_read_unlock();
+ 3)               |                  __free_pages() {
+ 3)               |                    free_unref_page() {
+ 3)   0.230 us    |                      get_pfnblock_flags_mask();
+ 3)   0.075 us    |                      _raw_spin_trylock();
+ 3)   0.149 us    |                      free_unref_page_commit();
+ 3)   0.077 us    |                      _raw_spin_unlock();
+ 3)   1.330 us    |                    }
+ 3)   1.575 us    |                  }
+ 3)   0.075 us    |                  __cond_resched();
+ 3)               |                  kvfree() {
+ 3)   0.071 us    |                    is_vmalloc_addr();
+ 3)   0.314 us    |                    kfree();
+ 3)   0.722 us    |                  }
+ 3)   0.203 us    |                  kfree();
+ 3)   6.421 us    |                }
+ 3)   6.789 us    |              }
+ 3) + 12.263 us   |            }
+ 3)   0.220 us    |            bpf_opcode_in_insntable();
+ 3)   0.180 us    |            bpf_opcode_in_insntable();
+ 3)               |            check_cfg() {
+ 3)               |              __kvmalloc_node_noprof() {
+ 3)               |                __kmalloc_node_noprof() {
+ 3)   0.070 us    |                  __cond_resched();
+ 3)   0.226 us    |                }
+ 3)   0.370 us    |              }
+ 3)               |              __kvmalloc_node_noprof() {
+ 3)               |                __kmalloc_node_noprof() {
+ 3)   0.069 us    |                  __cond_resched();
+ 3)   0.224 us    |                }
+ 3)   0.367 us    |              }
+ 3)               |              visit_insn() {
+ 3)   0.172 us    |                push_insn();
+ 3)   0.342 us    |              }
+ 3)   0.076 us    |              visit_insn();
+ 3)               |              visit_insn() {
+ 3)   0.076 us    |                push_insn();
+ 3)   0.240 us    |              }
+ 3)               |              kvfree() {
+ 3)   0.073 us    |                is_vmalloc_addr();
+ 3)   0.074 us    |                kfree();
+ 3)   0.384 us    |              }
+ 3)               |              kvfree() {
+ 3)   0.070 us    |                is_vmalloc_addr();
+ 3)   0.074 us    |                kfree();
+ 3)   0.370 us    |              }
+ 3)   2.863 us    |            }
+ 3)               |            do_check_common() {
+ 3)               |              __kmalloc_cache_noprof() {
+ 3)   0.074 us    |                __cond_resched();
+ 3)   0.347 us    |              }
+ 3)               |              __kmalloc_cache_noprof() {
+ 3)   0.070 us    |                __cond_resched();
+ 3)   0.236 us    |              }
+ 3)               |              init_reg_state() {
+ 3)   0.257 us    |                mark_reg_not_init();
+ 3)   0.070 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                mark_reg_not_init();
+ 3)   0.072 us    |                mark_reg_not_init();
+ 3)   0.070 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                mark_reg_not_init();
+ 3)   0.072 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                mark_reg_not_init();
+ 3)   0.072 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                mark_reg_not_init();
+ 3)   0.071 us    |                tnum_const();
+ 3)   2.225 us    |              }
+ 3)               |              mark_reg_known_zero() {
+ 3)   0.071 us    |                tnum_const();
+ 3)   0.282 us    |              }
+ 3)               |              check_alu_op() {
+ 3)               |                __check_reg_arg() {
+ 3)   0.078 us    |                  is_reg64.isra.0();
+ 3)   0.387 us    |                }
+ 3)   0.070 us    |                mark_reg_unknown();
+ 3)   0.070 us    |                tnum_const();
+ 3)               |                reg_bounds_sanity_check() {
+ 3)   0.069 us    |                  tnum_subreg();
+ 3)   0.069 us    |                  tnum_subreg();
+ 3)   0.401 us    |                }
+ 3)   1.500 us    |              }
+ 3)   0.082 us    |              check_resource_leak();
+ 3)               |              check_return_code() {
+ 3)               |                __check_reg_arg() {
+ 3)   0.081 us    |                  is_reg64.isra.0();
+ 3)   0.072 us    |                  mark_reg_read();
+ 3)   0.515 us    |                }
+ 3)   0.705 us    |              }
+ 3)   0.073 us    |              pop_stack();
+ 3)               |              free_verifier_state() {
+ 3)   0.074 us    |                kfree();
+ 3)   0.071 us    |                kfree();
+ 3)   0.360 us    |                kfree();
+ 3)   0.199 us    |                kfree();
+ 3)   1.134 us    |              }
+ 3)   0.070 us    |              pop_stack();
+ 3)   0.072 us    |              bpf_vlog_reset();
+ 3)   8.704 us    |            }
+ 3)               |            kvfree() {
+ 3)   0.072 us    |              is_vmalloc_addr();
+ 3)   0.206 us    |              kfree();
+ 3)   0.505 us    |            }
+ 3)               |            check_max_stack_depth() {
+ 3)   0.070 us    |              bpf_jit_supports_private_stack();
+ 3)   0.516 us    |            }
+ 3)   0.616 us    |            do_misc_fixups();
+ 3)   0.072 us    |            bpf_jit_needs_zext();
+ 3)   0.343 us    |            jit_subprogs();
+ 3)   0.088 us    |            ktime_get();
+ 3)   0.071 us    |            verbose();
+ 3)   0.072 us    |            bpf_vlog_finalize();
+ 3)   0.083 us    |            __bpf_free_used_maps();
+ 3)   0.073 us    |            __bpf_free_used_btfs();
+ 3)   0.076 us    |            module_put();
+ 3)               |            vfree() {
+ 3)   0.071 us    |              __cond_resched();
+ 3)               |              vfree.part.0() {
+ 3)               |                remove_vm_area() {
+ 3)   0.071 us    |                  __cond_resched();
+ 3)               |                  find_unlink_vmap_area() {
+ 3)   0.075 us    |                    _raw_spin_lock();
+ 3)   0.075 us    |                    _raw_spin_unlock();
+ 3)   0.435 us    |                  }
+ 3)               |                  __vunmap_range_noflush() {
+ 3)   0.072 us    |                    p4d_clear_huge();
+ 3)   0.070 us    |                    pud_clear_huge();
+ 3)   0.076 us    |                    pmd_clear_huge();
+ 3)   0.069 us    |                    __cond_resched();
+ 3)   0.708 us    |                  }
+ 3)               |                  free_vmap_area_noflush() {
+ 3)   0.073 us    |                    _raw_spin_lock();
+ 3)   0.128 us    |                    insert_vmap_area();
+ 3)   0.074 us    |                    _raw_spin_unlock();
+ 3)   0.604 us    |                  }
+ 3)   2.218 us    |                }
+ 3)   0.078 us    |                __rcu_read_lock();
+ 3)   0.070 us    |                __rcu_read_unlock();
+ 3)               |                __free_pages() {
+ 3)               |                  free_unref_page() {
+ 3)   0.072 us    |                    get_pfnblock_flags_mask();
+ 3)   0.074 us    |                    _raw_spin_trylock();
+ 3)   0.097 us    |                    free_unref_page_commit();
+ 3)   0.074 us    |                    _raw_spin_unlock();
+ 3)   0.730 us    |                  }
+ 3)   0.885 us    |                }
+ 3)   0.069 us    |                __cond_resched();
+ 3)               |                kvfree() {
+ 3)   0.069 us    |                  is_vmalloc_addr();
+ 3)   0.073 us    |                  kfree();
+ 3)   0.366 us    |                }
+ 3)   0.073 us    |                kfree();
+ 3)   4.543 us    |              }
+ 3)   4.841 us    |            }
+ 3)               |            kvfree() {
+ 3)   0.070 us    |              is_vmalloc_addr();
+ 3)   0.073 us    |              kfree();
+ 3)   0.384 us    |            }
+ 3)               |            kvfree() {
+ 3)   0.070 us    |              is_vmalloc_addr();
+ 3)               |              kfree() {
+ 3)               |                free_large_kmalloc() {
+ 3)               |                  __lruvec_stat_mod_folio() {
+ 3)   0.069 us    |                    __rcu_read_lock();
+ 3)   0.069 us    |                    __rcu_read_unlock();
+ 3)   0.070 us    |                    __mod_node_page_state();
+ 3)   0.539 us    |                  }
+ 3)               |                  __folio_put() {
+ 3)   0.071 us    |                    __mem_cgroup_uncharge();
+ 3)               |                    free_unref_page() {
+ 3)   0.071 us    |                      free_tail_page_prepare();
+ 3)   0.071 us    |                      free_tail_page_prepare();
+ 3)   0.071 us    |                      free_tail_page_prepare();
+ 3)   0.070 us    |                      free_tail_page_prepare();
+ 3)   0.070 us    |                      free_tail_page_prepare();
+ 3)   0.071 us    |                      free_tail_page_prepare();
+ 3)   0.072 us    |                      free_tail_page_prepare();
+ 3)   0.071 us    |                      get_pfnblock_flags_mask();
+ 3)   0.073 us    |                      _raw_spin_trylock();
+ 3)   0.072 us    |                      free_unref_page_commit();
+ 3)   0.074 us    |                      _raw_spin_unlock();
+ 3)   1.822 us    |                    }
+ 3)   2.234 us    |                  }
+ 3)   3.125 us    |                }
+ 3)   3.293 us    |              }
+ 3)   3.600 us    |            }
+ 3) + 56.498 us   |          }
+ 3)               |          bpf_prog_select_runtime() {
+ 3)   0.074 us    |            bpf_prog_alloc_jited_linfo();
+ 3)               |            bpf_int_jit_compile() {
+ 3)   0.071 us    |              bpf_jit_blind_constants();
+ 3)               |              __kmalloc_cache_noprof() {
+ 3)   0.070 us    |                __cond_resched();
+ 3)   0.228 us    |              }
+ 3)               |              __kvmalloc_node_noprof() {
+ 3)               |                __kmalloc_node_noprof() {
+ 3)   0.070 us    |                  __cond_resched();
+ 3)   0.230 us    |                }
+ 3)   0.376 us    |              }
+ 3)               |              do_jit() {
+ 3)   0.073 us    |                bpf_arena_get_kern_vm_start();
+ 3)   0.070 us    |                bpf_arena_get_user_vm_start();
+ 3)   0.075 us    |                emit_cfi.constprop.0();
+ 3)   0.085 us    |                push_callee_regs();
+ 3)   0.340 us    |                emit_mov_imm32();
+ 3)   0.085 us    |                pop_callee_regs();
+ 3)   0.069 us    |                emit_return();
+ 3)   2.972 us    |              }
+ 3)   0.071 us    |              __cond_resched();
+ 3)               |              do_jit() {
+ 3)   0.072 us    |                bpf_arena_get_kern_vm_start();
+ 3)   0.072 us    |                bpf_arena_get_user_vm_start();
+ 3)   0.075 us    |                emit_cfi.constprop.0();
+ 3)   0.070 us    |                push_callee_regs();
+ 3)   0.070 us    |                emit_mov_imm32();
+ 3)   0.074 us    |                pop_callee_regs();
+ 3)   0.072 us    |                emit_return();
+ 3)   1.230 us    |              }
+ 3)               |              bpf_jit_binary_pack_alloc() {
+ 3)   0.156 us    |                bpf_jit_charge_modmem();
+ 3)               |                bpf_prog_pack_alloc() {
+ 3)               |                  mutex_lock() {
+ 3)   0.070 us    |                    __cond_resched();
+ 3)   0.352 us    |                  }
+ 3)   0.075 us    |                  mutex_unlock();
+ 3)   0.964 us    |                }
+ 3)               |                __kvmalloc_node_noprof() {
+ 3)               |                  __kmalloc_node_noprof() {
+ 3)   0.072 us    |                    __cond_resched();
+ 3)   0.226 us    |                  }
+ 3)   0.373 us    |                }
+ 3)   0.072 us    |                jit_fill_hole();
+ 3)               |                __get_random_u32_below() {
+ 3)   0.236 us    |                  get_random_u32();
+ 3)   0.462 us    |                }
+ 3)   2.627 us    |              }
+ 3)   0.073 us    |              __cond_resched();
+ 3)               |              do_jit() {
+ 3)   0.072 us    |                bpf_arena_get_kern_vm_start();
+ 3)   0.071 us    |                bpf_arena_get_user_vm_start();
+ 3)   0.075 us    |                emit_cfi.constprop.0();
+ 3)   0.071 us    |                push_callee_regs();
+ 3)   0.075 us    |                emit_mov_imm32();
+ 3)   0.069 us    |                pop_callee_regs();
+ 3)   0.071 us    |                emit_return();
+ 3)   1.368 us    |              }
+ 3)               |              bpf_jit_binary_pack_finalize() {
+ 3)               |                bpf_arch_text_copy() {
+ 3)               |                  text_poke_copy() {
+ 3)               |                    mutex_lock() {
+ 3)   0.070 us    |                      __cond_resched();
+ 3)   0.222 us    |                    }
+ 3)               |                    text_poke_copy_locked() {
+ 3)   0.141 us    |                      in_gate_area_no_mm();
+ 3)               |                      __text_poke() {
+ 3)   0.073 us    |                        in_gate_area_no_mm();
+ 3)   0.296 us    |                        vmalloc_to_page();
+ 3)               |                        __get_locked_pte() {
+ 3)   0.074 us    |                          walk_to_pmd();
+ 3)               |                          __pte_offset_map_lock() {
+ 3)               |                            ___pte_offset_map() {
+ 3)   0.072 us    |                              __rcu_read_lock();
+ 3)   0.222 us    |                            }
+ 3)   0.076 us    |                            _raw_spin_lock();
+ 3)   0.533 us    |                          }
+ 3)   0.835 us    |                        }
+ 3)               |                        switch_mm_irqs_off() {
+ 3)   0.078 us    |                          switch_ldt();
+ 3)   0.270 us    |                        }
+ 3)   0.093 us    |                        text_poke_memcpy();
+ 3)               |                        switch_mm_irqs_off() {
+ 3)   0.074 us    |                          switch_ldt();
+ 3)   0.263 us    |                        }
+ 3)   0.074 us    |                        flush_tlb_mm_range();
+ 3)   0.077 us    |                        _raw_spin_unlock();
+ 3)   0.070 us    |                        __rcu_read_unlock();
+ 3)   2.962 us    |                      }
+ 3)   3.355 us    |                    }
+ 3)   0.075 us    |                    mutex_unlock();
+ 3)   3.984 us    |                  }
+ 3)   4.381 us    |                }
+ 3)               |                kvfree() {
+ 3)   0.070 us    |                  is_vmalloc_addr();
+ 3)   0.083 us    |                  kfree();
+ 3)   0.380 us    |                }
+ 3)   5.000 us    |              }
+ 3)   0.071 us    |              bpf_prog_fill_jited_linfo();
+ 3)               |              kvfree() {
+ 3)   0.068 us    |                is_vmalloc_addr();
+ 3)   0.074 us    |                kfree();
+ 3)   0.369 us    |              }
+ 3)   0.073 us    |              kfree();
+ 3) + 16.393 us   |            }
+ 3)               |            bpf_prog_jit_attempt_done() {
+ 3)   0.072 us    |              kfree();
+ 3)   0.227 us    |            }
+ 3)               |            mutex_lock() {
+ 3)   0.074 us    |              __cond_resched();
+ 3)   0.231 us    |            }
+ 3)   0.074 us    |            mutex_unlock();
+ 3) + 17.527 us   |          }
+ 3)   0.074 us    |          _raw_spin_lock_bh();
+ 3)               |          _raw_spin_unlock_bh() {
+ 3)   0.152 us    |            __local_bh_enable_ip();
+ 3)   0.386 us    |          }
+ 3)               |          bpf_prog_kallsyms_add() {
+ 3)               |            bpf_token_capable() {
+ 3)               |              ns_capable() {
+ 3)               |                security_capable() {
+ 3)   0.072 us    |                  cap_capable();
+ 3)   0.221 us    |                }
+ 3)   0.371 us    |              }
+ 3)   0.522 us    |            }
+ 3)               |            bpf_ksym_add() {
+ 3)   0.073 us    |              _raw_spin_lock_bh();
+ 3)               |              _raw_spin_unlock_bh() {
+ 3)   0.073 us    |                __local_bh_enable_ip();
+ 3)   0.223 us    |              }
+ 3)   0.646 us    |            }
+ 3)   1.632 us    |          }
+ 3)   0.084 us    |          perf_event_bpf_event();
+ 3)               |          bpf_prog_new_fd() {
+ 3)   0.073 us    |            security_bpf_prog();
+ 3)               |            anon_inode_getfd() {
+ 3)               |              get_unused_fd_flags() {
+ 3)               |                alloc_fd() {
+ 3)   0.160 us    |                  _raw_spin_lock();
+ 3)   0.074 us    |                  _raw_spin_unlock();
+ 3)   0.727 us    |                }
+ 3)   0.989 us    |              }
+ 3)               |              __anon_inode_getfile() {
+ 3)   0.076 us    |                ihold();
+ 3)               |                alloc_file_pseudo() {
+ 3)               |                  d_alloc_pseudo() {
+ 3)               |                    __d_alloc() {
+ 3)               |                      kmem_cache_alloc_lru_noprof() {
+ 3)   0.072 us    |                        __cond_resched();
+ 3)   0.240 us    |                      }
+ 3)   0.090 us    |                      d_set_d_op();
+ 3)   0.583 us    |                    }
+ 3)   0.736 us    |                  }
+ 3)   0.072 us    |                  mntget();
+ 3)               |                  d_instantiate() {
+ 3)   0.074 us    |                    security_d_instantiate();
+ 3)   0.074 us    |                    _raw_spin_lock();
+ 3)               |                    __d_instantiate() {
+ 3)   0.071 us    |                      d_flags_for_inode();
+ 3)   0.075 us    |                      _raw_spin_lock();
+ 3)   0.073 us    |                      _raw_spin_unlock();
+ 3)   0.538 us    |                    }
+ 3)   0.073 us    |                    _raw_spin_unlock();
+ 3)   1.174 us    |                  }
+ 3)               |                  alloc_empty_file() {
+ 3)               |                    kmem_cache_alloc_noprof() {
+ 3)   0.070 us    |                      __cond_resched();
+ 3)   0.235 us    |                    }
+ 3)               |                    init_file() {
+ 3)   0.077 us    |                      security_file_alloc();
+ 3)   0.072 us    |                      __mutex_init();
+ 3)   0.541 us    |                    }
+ 3)   1.026 us    |                  }
+ 3)   0.080 us    |                  file_init_path();
+ 3)   3.723 us    |                }
+ 3)   4.171 us    |              }
+ 3)   0.074 us    |              fd_install();
+ 3)   5.709 us    |            }
+ 3)   6.029 us    |          }
+ 3) ! 107.233 us  |        }
+ 3) ! 108.504 us  |      }
+ 3) ! 108.678 us  |    }
+ 3) ! 109.566 us  |  }
