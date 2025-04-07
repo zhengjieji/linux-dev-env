@@ -1,0 +1,10 @@
+bpf_map_lookup_elem
+bpf_xdp_adjust_meta
+bpf_ktime_get_tai_ns
+bpf_ktime_get_ns
+bpf_loop
+bpf_csum_diff
+bpf_tcp_raw_gen_syncookie_ipv4
+bpf_xdp_adjust_tail
+bpf_skb_change_tail
+bpf_redirect
