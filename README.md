@@ -22,11 +22,13 @@ git checkout v6.13
 #### Copy Config File to Linux Folder
 
 ```sh
-cp linux-config/.config ./linux
+cp linux-config-6.13/.config ./linux
 ```
 
 #### Build Dependencies
 ```sh
+cd ..
+
 sudo make headers-install
 
 sudo make modules-install
