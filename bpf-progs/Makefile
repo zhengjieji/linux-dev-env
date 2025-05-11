@@ -9,7 +9,7 @@ USER_SRC := $(wildcard *.user.c)
 USER := $(USER_SRC:.c=)
 ARCH = $(shell uname -m | sed 's/x86_64/x86/' | sed 's/aarch64/arm64/')
 BPF_CLANG := clang
-BPF_CLANG_CFLAGS := -target bpf -g -O2 -D __TARGET_ARCH_$(ARCH) 
+BPF_CLANG_CFLAGS := -g -O2 -target bpf  -D __TARGET_ARCH_$(ARCH) 
 INCLUDE := -I/linux/usr/include/ -I/linux/tools/lib/ 
 USER_CFLAGS := -g -I/linux/usr/include -I/linux/tools/lib/ -L/linux/tools/lib/bpf/
 SKEL_H := $(SOURCES:.kern.c=.skel.h)
@@ -31,7 +31,7 @@ vmlinux.h:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
 run:
-	./load.user empty.kern.o empty
+	LIBBPF_DEBUG=1 ./empty.btf.user
 
 %.skel.h: %.kern.o
 	bpftool gen skeleton $< > $@
