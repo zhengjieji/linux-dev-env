@@ -6,9 +6,6 @@
 
 #define __contains(name, node) __attribute__((btf_decl_tag("contains:" #name ":" #node)))
 
-extern void *bpf_obj_new_impl(unsigned long type_id, const void *key) __ksym;
-extern void bpf_obj_drop_impl(void *kptr, const void *key) __ksym;
-
 #define bpf_obj_new(type)                                                      \
   ((type *)bpf_obj_new_impl(bpf_core_type_id_local(type), NULL))
 
@@ -23,19 +20,19 @@ struct bar {
 
 struct foo {
   struct bpf_list_node node;
-  struct bpf_list_head head __contains(bar, node);
   struct bpf_spin_lock lock;
   int data;
   struct bpf_list_node node2;
+  struct bpf_list_head head __contains(bar, node);
 };
 
 
-SEC("tp/syscalls/sys_enter_getcwd")
+SEC("tp_btf/task_newtask")
 int empty(void *ctx) {
   struct foo *f;
   f = bpf_obj_new(typeof(*f));
-  if (!f)
-    return 2;
+  if (f == NULL)
+    return 1;
   bpf_obj_drop(f);
   return 0;
 }
