@@ -21,7 +21,7 @@ struct foo {
 
 struct bpf_spin_lock glock;
 
-SEC("tp/syscalls/sys_enter_getcwd")
+SEC("?Tc")
 int empty(void *ctx) {
   struct bpf_list_node *n;
   struct foo *f;

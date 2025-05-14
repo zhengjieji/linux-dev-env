@@ -9,21 +9,9 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format,
   return vfprintf(stderr, format, args);
 }
 
-// void handle_event(void *ctx, int cpu, void *data, unsigned int data_sz) {
-//   struct data_t *m = data;
-
-//   printf("%-6d %-6d %-16s %-16s %s\n", m->pid, m->uid, m->command, m->path,
-//          m->message);
-// }
-
-// void lost_event(void *ctx, int cpu, long long unsigned int data_sz) {
-//   printf("lost event\n");
-// }
-
 int main() {
   struct empty_kern *skel;
   int err;
-  struct perf_buffer *pb = NULL;
 
   libbpf_set_print(libbpf_print_fn);
 

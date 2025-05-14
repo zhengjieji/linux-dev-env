@@ -3,7 +3,7 @@
 
 char LISENSE[] SEC("license") = "Dual BSD/GPL";
 
-SEC("tp/syscalls/sys_enter_getcwd")
+SEC("tp_btf/sys_enter")
 int empty(void *ctx)
 {
     int pid = bpf_get_current_pid_tgid();

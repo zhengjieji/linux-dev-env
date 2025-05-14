@@ -22,7 +22,7 @@ test: test.c
 	$(BPF_CLANG) $(INCLUDE) $(BPF_CLANG_CFLAGS)  -o test test.c
 
 $(FILES) : %.o : %.c  vmlinux.h
-	$(BPF_CLANG) $(INCLUDE) $(BPF_CLANG_CFLAGS)  -o $@ -c $<
+	LLVM=1 $(BPF_CLANG) $(INCLUDE) $(BPF_CLANG_CFLAGS)  -o $@ -c $<
 
 $(USER) : % : %.c 
 	gcc $(USER_CFLAGS) $< -lbpf -lelf -lz -o $@
