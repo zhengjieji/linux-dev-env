@@ -13,26 +13,25 @@
 
 char _license[] SEC("license") = "GPL";
 
-struct bar {
-  struct bpf_list_node node;
-  int data;
-};
-
 struct foo {
   struct bpf_list_node node;
-  struct bpf_spin_lock lock;
   int data;
-  struct bpf_list_node node2;
-  struct bpf_list_head head __contains(bar, node);
 };
 
+struct bpf_list_head head __contains(foo, node);
+struct bpf_spin_lock lock;
 
-SEC("tp_btf/task_newtask")
+SEC("?tc")
 int empty(void *ctx) {
+  struct bpf_list_node *n;
   struct foo *f;
   f = bpf_obj_new(typeof(*f));
-  if (f == NULL)
-    return 1;
+  if (!f)
+    return 2;
+  bpf_spin_lock(&lock);
+  n = bpf_list_pop_front(&head);
+  bpf_spin_unlock(&lock);
+  bpf_obj_drop(container_of(n, struct foo, node));
   bpf_obj_drop(f);
   return 0;
 }

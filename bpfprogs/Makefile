@@ -10,7 +10,7 @@ USER := $(USER_SRC:.c=)
 ARCH = $(shell uname -m | sed 's/x86_64/x86/' | sed 's/aarch64/arm64/')
 BPF_CLANG := clang-19
 BPF_CLANG_CFLAGS := -g -O0 -target bpf
-INCLUDE := -I/linux/usr/include/ -I/linux/tools/lib/ 
+INCLUDE := -I/linux/usr/include/ -I/linux/tools/lib/ -I/linux-dev-env/libbpf/src
 USER_CFLAGS := -g -I/linux/usr/include -I/linux/tools/lib/ -L/linux-dev-env/libbpf/src
 SKEL_H := $(SOURCES:.kern.c=.skel.h)
 BPF_OBJ := $(SOURCES:.kern.c=.bpf.o)  
