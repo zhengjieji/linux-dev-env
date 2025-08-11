@@ -56,3 +56,53 @@ bpftool:
 
 bpftool-clean:
 	docker run --rm -v ${LINUX}:/linux -w /linux/tools/bpf/bpftool $(RUNTIME_IMAGE) make clean -j`nproc`
+
+# BPF Verifier Management
+verifier-setup:
+	@chmod +x scripts/setup_verifiers.sh
+	@./scripts/setup_verifiers.sh $(LINUX)
+
+verifier-replace:
+	@chmod +x scripts/replace_verifier.sh
+	@./scripts/replace_verifier.sh $(LINUX)
+
+verifier-revert:
+	@chmod +x scripts/revert_verifier.sh
+	@./scripts/revert_verifier.sh $(LINUX)
+
+verifier-status:
+	@echo "=== BPF Verifier Status ==="
+	@if [ -f $(LINUX)/kernel/bpf/verifier.c.original ]; then \
+		echo "✓ Backup: $(LINUX)/kernel/bpf/verifier.c.original"; \
+	else \
+		echo "✗ Backup: Not found (run 'make verifier-setup')"; \
+	fi
+	@if [ -f verifiers/original.c ]; then \
+		echo "✓ Original: verifiers/original.c"; \
+	else \
+		echo "✗ Original: Not found"; \
+	fi
+	@if [ -f verifiers/custom.c ]; then \
+		if diff -q verifiers/original.c verifiers/custom.c >/dev/null 2>&1; then \
+			echo "✓ Custom: verifiers/custom.c (unmodified)"; \
+		else \
+			echo "✓ Custom: verifiers/custom.c (modified)"; \
+		fi; \
+	else \
+		echo "✗ Custom: Not found"; \
+	fi
+	@if [ -f $(LINUX)/kernel/bpf/verifier.c ] && [ -f verifiers/custom.c ]; then \
+		if diff -q $(LINUX)/kernel/bpf/verifier.c verifiers/custom.c >/dev/null 2>&1; then \
+			echo "✓ Active: Custom verifier"; \
+		elif [ -f $(LINUX)/kernel/bpf/verifier.c.original ] && diff -q $(LINUX)/kernel/bpf/verifier.c $(LINUX)/kernel/bpf/verifier.c.original >/dev/null 2>&1; then \
+			echo "✓ Active: Original verifier"; \
+		else \
+			echo "? Active: Unknown state"; \
+		fi; \
+	fi
+
+verifier-clean:
+	@rm -rf verifiers/
+	@echo "✓ Cleaned verifier files"
+
+.PHONY: verifier-setup verifier-replace verifier-revert verifier-status verifier-clean

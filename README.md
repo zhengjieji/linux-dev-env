@@ -1,5 +1,71 @@
 # Linux Development Environment
+
+This repository contains workflows for building and modifying the Linux kernel, plus **Simple BPF Verifier Replacement Tools**.
+
+## BPF Verifier Replacement
+
+Simple system to replace the kernel BPF verifier with your custom implementation.
+
+### Structure
+```
+├── verifiers/
+│   ├── original.c       # Original kernel verifier (copied from /linux)
+│   └── custom.c         # Your custom verifier implementation  
+├── setup_verifiers.sh   # Copy verifiers from kernel source
+├── replace_verifier.sh  # Replace kernel with custom verifier
+└── revert_verifier.sh   # Revert to original verifier
+```
+
+### Usage
+
+**1. Setup (First Time)**
+```bash
+make verifier-setup
+```
+
+**2. Check Status**
+```bash
+make verifier-status
+```
+
+**3. Edit Custom Verifier**
+```bash
+vi verifiers/custom.c
+```
+
+**4. Replace Verifier**
+```bash
+sudo make verifier-replace
+sudo reboot
+```
+
+**5. Revert When Needed**
+```bash
+sudo make verifier-revert
+sudo reboot
+```
+
+**6. Clean Up**
+```bash
+make verifier-clean
+```
+
+### Makefile Targets
+
+- **`make verifier-setup`** - Copy original verifier from kernel source
+- **`make verifier-replace`** - Replace kernel with custom verifier  
+- **`make verifier-revert`** - Revert to original verifier
+- **`make verifier-status`** - Show verifier status and usage
+- **`make verifier-clean`** - Clean verifier files and logs
+
+---
+
+## Original Linux Development Environment
+
 This repository contains *one* workflow for building and modifying the Linux kernel. It consists of two main components. The first is a docker container that contains all the requirements to build the Linux kernel, as well as the requirements to run QEMU. The second is a QEMU  script that boots a virtual machine running a custom version of the Linux kernel. Using these together allows you to easily make and test changes to the Linux kernel without needing to manage all the packages locally.
+
+
+==Make sure you have pahole installed!==: `sudo apt-get install dwarves`
 
 ***This repository is cloned and modified from rosalab/(unknown)-kernel***
 
