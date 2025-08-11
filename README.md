@@ -1,6 +1,40 @@
 # Linux Development Environment
 
-This repository contains workflows for building and modifying the Linux kernel, plus **Simple BPF Verifier Replacement Tools**.
+This repository contains workflows for building and modifying the Linux kernel, plus **Simple BPF Verifier Replacement Tools** and **BPF Micro-Benchmarking Suite**.
+
+## BPF Micro-Benchmarks
+
+Performance testing framework for comparing original and custom BPF kfunc implementations.
+
+### Structure
+```
+micro-benchmark/
+└── <kfunc_name>/           # Top-level directory named after the kfunc
+    ├── original/           # Original kernel implementation
+    │   ├── bpf_prog.c     # BPF program using original kfunc
+    │   ├── loader.c       # User-space loader
+    │   ├── trigger.c      # Test trigger program
+    │   ├── run.sh         # Execution script
+    │   └── Makefile       # Build configuration
+    └── custom/            # Custom implementation
+        ├── bpf_prog_custom.c  # BPF program using custom kfunc
+        ├── custom_kfunc.c     # Kernel module with custom kfunc
+        ├── loader.c           # User-space loader
+        ├── trigger.c          # Test trigger program
+        ├── run.sh             # Execution script
+        └── Makefile           # Build configuration
+```
+
+### Building BPF Programs
+```bash
+# Build programs in a specific directory
+cd micro-benchmark/<kfunc_name>/original
+make
+
+# Or for custom implementation
+cd micro-benchmark/<kfunc_name>/custom
+make
+```
 
 ## BPF Verifier Replacement
 
@@ -11,9 +45,10 @@ Simple system to replace the kernel BPF verifier with your custom implementation
 ├── verifiers/
 │   ├── original.c       # Original kernel verifier (copied from /linux)
 │   └── custom.c         # Your custom verifier implementation  
-├── setup_verifiers.sh   # Copy verifiers from kernel source
-├── replace_verifier.sh  # Replace kernel with custom verifier
-└── revert_verifier.sh   # Revert to original verifier
+├── scripts/
+│   ├── setup_verifiers.sh   # Copy verifiers from kernel source
+│   ├── replace_verifier.sh  # Replace kernel with custom verifier
+│   └── revert_verifier.sh   # Revert to original verifier
 ```
 
 ### Usage
