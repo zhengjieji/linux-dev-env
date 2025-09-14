@@ -1,0 +1,19 @@
+# Kfunc replacement configuration for bpf_obj_new_impl
+# This file defines which kernel files need to be replaced for this kfunc
+
+kfunc_name: bpf_obj_new_impl
+
+# List of kernel files that implement this kfunc
+# bpf_obj_new_impl requires both helpers.c and memalloc.c
+files_to_replace:
+  - path: kernel/bpf/helpers.c
+    description: Contains the bpf_obj_new_impl kfunc implementation for BPF object allocation
+    
+  - path: kernel/bpf/memalloc.c
+    description: Contains memory allocation infrastructure used by bpf_obj_new_impl
+    
+# Additional related files that may need modification:
+# - path: kernel/bpf/btf.c
+#   description: BTF handling for allocated objects
+# - path: include/linux/bpf.h
+#   description: Header definitions for object allocation

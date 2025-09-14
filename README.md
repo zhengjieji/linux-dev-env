@@ -38,60 +38,144 @@ make
 
 ## BPF Verifier Replacement
 
-Simple system to replace the kernel BPF verifier with your custom implementation.
+Simple system to replace the kernel BPF verifier with your custom implementation. The verifier replacement tools are now located within each kfunc's micro-benchmark directory.
 
 ### Structure
 ```
-├── verifiers/
-│   ├── original.c       # Original kernel verifier (copied from /linux)
-│   └── custom.c         # Your custom verifier implementation  
-├── scripts/
-│   ├── setup_verifiers.sh   # Copy verifiers from kernel source
-│   ├── replace_verifier.sh  # Replace kernel with custom verifier
-│   └── revert_verifier.sh   # Revert to original verifier
+micro-benchmark/
+└── <kfunc_name>/                      # e.g., bpf_send_signal_task
+    ├── kfunc-config.yaml              # Configuration of files to replace
+    ├── kfunc-replacement/              # Kfunc replacement tools
+    │   ├── original_bpf_trace.c       # Original kernel implementation
+    │   ├── custom_bpf_trace.c         # Your custom kfunc implementation
+    │   ├── setup_kfunc.sh             # Copy kfunc from kernel source
+    │   ├── replace_kfunc.sh           # Replace kernel with custom kfunc
+    │   ├── revert_kfunc.sh            # Revert to original kfunc
+    │   └── Makefile                   # Kfunc management commands
+    ├── verifier-replacement/           # Verifier replacement tools
+    │   ├── original.c                 # Original kernel verifier
+    │   ├── custom.c                   # Your custom verifier implementation
+    │   ├── setup_verifiers.sh         # Copy verifiers from kernel source
+    │   ├── replace_verifier.sh        # Replace kernel with custom verifier
+    │   ├── revert_verifier.sh         # Revert to original verifier
+    │   └── Makefile                   # Verifier management commands
+    └── test/                          # Test programs for the kfunc
 ```
 
-### Usage
+### Usage (from kfunc verifier-replacement directory)
+
+Navigate to the specific kfunc's verifier-replacement directory:
+```bash
+cd micro-benchmark/bpf_send_signal_task/verifier-replacement/
+```
 
 **1. Setup (First Time)**
 ```bash
-make verifier-setup
+make setup
 ```
 
 **2. Check Status**
 ```bash
-make verifier-status
+make status
 ```
 
 **3. Edit Custom Verifier**
 ```bash
-vi verifiers/custom.c
+vi custom.c
 ```
 
 **4. Replace Verifier**
 ```bash
-sudo make verifier-replace
+sudo make replace
+# Then rebuild kernel from project root:
+cd ../../../..
+sudo make vmlinux
 sudo reboot
 ```
 
 **5. Revert When Needed**
 ```bash
-sudo make verifier-revert
-sudo reboot
+sudo make revert
+# Then rebuild kernel and reboot
 ```
 
 **6. Clean Up**
 ```bash
-make verifier-clean
+make clean
 ```
 
-### Makefile Targets
+### Makefile Targets (in verifier-replacement directory)
 
-- **`make verifier-setup`** - Copy original verifier from kernel source
-- **`make verifier-replace`** - Replace kernel with custom verifier  
-- **`make verifier-revert`** - Revert to original verifier
-- **`make verifier-status`** - Show verifier status and usage
-- **`make verifier-clean`** - Clean verifier files and logs
+- **`make setup`** - Copy original verifier from kernel source
+- **`make replace`** - Replace kernel with custom verifier  
+- **`make revert`** - Revert to original verifier
+- **`make status`** - Show verifier status and usage
+- **`make clean`** - Clean verifier files
+
+## BPF Kfunc Replacement
+
+System to replace kernel kfunc implementations with custom versions for testing and benchmarking.
+
+### Usage (from kfunc kfunc-replacement directory)
+
+Navigate to the specific kfunc's kfunc-replacement directory:
+```bash
+cd micro-benchmark/bpf_send_signal_task/kfunc-replacement/
+```
+
+**1. Setup (First Time)**
+```bash
+make setup
+```
+
+**2. Check Status**
+```bash
+make status
+```
+
+**3. Edit Custom Kfunc Implementation**
+```bash
+vi custom_bpf_trace.c
+# Modify the bpf_send_signal_task function
+```
+
+**4. Replace Kfunc**
+```bash
+sudo make replace
+# Then rebuild kernel from project root:
+cd ../../../..
+sudo make vmlinux
+sudo reboot
+```
+
+**5. Show Differences**
+```bash
+make diff
+```
+
+**6. Revert When Done**
+```bash
+sudo make revert
+# Then rebuild kernel and reboot
+```
+
+**7. Clean Up**
+```bash
+make clean
+```
+
+### Makefile Targets (in kfunc-replacement directory)
+
+- **`make setup`** - Copy original kfunc from kernel source
+- **`make replace`** - Replace kernel with custom kfunc implementation
+- **`make revert`** - Revert to original kfunc
+- **`make status`** - Show current kfunc status
+- **`make diff`** - Show differences between original and custom
+- **`make clean`** - Clean kfunc files
+
+### Configuration
+
+Each kfunc directory contains a `kfunc-config.yaml` file that specifies which kernel files implement the kfunc. For `bpf_send_signal_task`, this is `kernel/trace/bpf_trace.c`.
 
 ---
 

@@ -1,0 +1,16 @@
+# Kfunc replacement configuration for bpf_send_signal_task
+# This file defines which kernel files need to be replaced for this kfunc
+
+kfunc_name: bpf_send_signal_task
+
+# List of kernel files that implement this kfunc
+# Paths are relative to the Linux kernel source directory
+files_to_replace:
+  - path: kernel/trace/bpf_trace.c
+    description: Contains the bpf_send_signal_task kfunc implementation
+    
+# Additional files can be added here in the future:
+# - path: kernel/bpf/helpers.c
+#   description: Helper functions
+# - path: include/linux/bpf.h
+#   description: Header definitions

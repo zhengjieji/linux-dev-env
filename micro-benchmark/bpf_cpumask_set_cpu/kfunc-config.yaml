@@ -1,0 +1,14 @@
+# Kfunc replacement configuration for bpf_cpumask_set_cpu
+# This file defines which kernel files need to be replaced for this kfunc
+
+kfunc_name: bpf_cpumask_set_cpu
+
+# List of kernel files that implement this kfunc
+# bpf_cpumask_set_cpu is implemented in kernel/bpf/cpumask.c
+files_to_replace:
+  - path: kernel/bpf/cpumask.c
+    description: Contains the bpf_cpumask_set_cpu kfunc implementation for BPF cpumask operations
+    
+# Additional related files that may need modification:
+# - path: include/linux/bpf.h
+#   description: Header definitions for cpumask operations

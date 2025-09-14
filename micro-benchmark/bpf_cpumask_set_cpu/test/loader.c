@@ -38,11 +38,10 @@ int main(int argc, char *argv[])
     struct bpf_object *obj = NULL;
     struct bpf_link *link = NULL;
     struct bpf_program *prog;
-    struct bpf_map *map;
     int err = 0;
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <bpf_object_file> [target_pid]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <bpf_object_file>\n", argv[0]);
         return 1;
     }
 
@@ -64,42 +63,11 @@ int main(int argc, char *argv[])
         goto cleanup;
     }
 
-    /* Try both possible program names */
-    prog = bpf_object__find_program_by_name(obj, "test_send_signal_task");
+    prog = bpf_object__find_program_by_name(obj, "test_cpumask_ops");
     if (!prog) {
-        prog = bpf_object__find_program_by_name(obj, "test_custom_send_signal");
-        if (!prog) {
-            fprintf(stderr, "Failed to find BPF program (tried test_send_signal_task and test_custom_send_signal)\n");
-            err = -ENOENT;
-            goto cleanup;
-        }
-        printf("Using custom kfunc version\n");
-    } else {
-        printf("Using original kfunc version\n");
-    }
-
-    // Get the map and optionally set target PID
-    map = bpf_object__find_map_by_name(obj, "target_pid_map");
-    if (map) {
-        int map_fd = bpf_map__fd(map);
-        if (argc >= 3) {
-            __u32 key = 0;
-            __u32 target_pid = atoi(argv[2]);
-            err = bpf_map_update_elem(map_fd, &key, &target_pid, BPF_ANY);
-            if (err == 0) {
-                printf("Set target PID to %d\n", target_pid);
-            } else {
-                printf("Failed to set target PID: %s\n", strerror(errno));
-            }
-        }
-        
-        // Pin the map so trigger program can access it
-        err = bpf_map__pin(map, "/sys/fs/bpf/target_pid_map");
-        if (err && err != -EEXIST) {
-            printf("Warning: Failed to pin map: %s\n", strerror(-err));
-        } else {
-            printf("Map pinned to /sys/fs/bpf/target_pid_map\n");
-        }
+        fprintf(stderr, "Failed to find BPF program test_cpumask_ops\n");
+        err = -ENOENT;
+        goto cleanup;
     }
 
     link = bpf_program__attach(prog);
@@ -110,7 +78,8 @@ int main(int argc, char *argv[])
         goto cleanup;
     }
 
-    printf("BPF tracepoint program loaded and attached successfully.\n");
+    printf("BPF program loaded and attached successfully.\n");
+    printf("Testing bpf_cpumask_set_cpu kfunc...\n");
     printf("Press Ctrl+C to exit.\n");
     printf("Monitor output with: cat /sys/kernel/debug/tracing/trace_pipe\n\n");
 
@@ -119,9 +88,6 @@ int main(int argc, char *argv[])
     }
 
 cleanup:
-    // Unpin the map on exit
-    unlink("/sys/fs/bpf/target_pid_map");
-    
     if (link)
         bpf_link__destroy(link);
     if (obj)

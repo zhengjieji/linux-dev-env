@@ -20,18 +20,13 @@ USER_INCLUDES := -I$(LINUX_DIR)/usr/include \
 USER_LDFLAGS := -L$(LIBBPF_DIR)
 USER_LIBS := -lbpf
 
-# Kernel module settings
-obj-m += custom_kfunc.o
-KBUILD_CFLAGS += -g -O2
-
 # Targets
-BPF_PROG := bpf_prog_custom.o
+BPF_PROGS := bpf_prog.o
 USER_PROGS := loader trigger
-KMOD := custom_kfunc.ko
 
 .PHONY: all clean
 
-all: $(BPF_PROG) $(USER_PROGS) $(KMOD)
+all: $(BPF_PROGS) $(USER_PROGS)
 
 # Generate vmlinux.h if it doesn't exist
 vmlinux.h:
@@ -43,13 +38,9 @@ vmlinux.h:
 		fi \
 	fi
 
-# Build BPF program
-$(BPF_PROG): bpf_prog_custom.c vmlinux.h
+# Build BPF programs
+%.o: %.c vmlinux.h
 	$(CLANG) $(BPF_INCLUDES) $(BPF_CFLAGS) -o $@ $<
-
-# Build kernel module
-$(KMOD): custom_kfunc.c
-	$(MAKE) -C $(LINUX_DIR) M=$(PWD) modules
 
 # Build user-space loader
 loader: loader.c
@@ -60,7 +51,5 @@ trigger: trigger.c
 	$(CC) $(USER_CFLAGS) $(USER_INCLUDES) $< $(USER_LDFLAGS) $(USER_LIBS) -o $@
 
 clean:
-	rm -f $(BPF_PROG) $(USER_PROGS)
-	rm -f *.ko *.o *.mod *.mod.c *.mod.o modules.order Module.symvers
-	rm -rf .tmp_versions/ .*.cmd
+	rm -f $(BPF_PROGS) $(USER_PROGS)
 	rm -f vmlinux.h
