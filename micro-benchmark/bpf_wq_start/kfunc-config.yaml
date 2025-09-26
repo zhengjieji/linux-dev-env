@@ -1,0 +1,16 @@
+# Kfunc replacement configuration for bpf_wq_start
+# This file defines which kernel files need to be replaced for this kfunc
+
+kfunc_name: bpf_wq_start
+
+# List of kernel files that implement this kfunc
+# bpf_wq_start requires helpers.c for the workqueue kfuncs
+files_to_replace:
+  - path: kernel/bpf/helpers.c
+    description: Contains the bpf_wq_start, bpf_wq_init, and bpf_wq_set_callback_impl kfunc implementations
+
+# Additional related files that may need modification:
+# - path: include/linux/bpf.h
+#   description: Header definitions for workqueue support
+# - path: kernel/bpf/verifier.c
+#   description: Verifier support for workqueue operations
