@@ -1,0 +1,57 @@
+====================================================================
+                    FUNCTION INLINING ANALYSIS
+====================================================================
+Test: 07_function_inlining
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 202 instructions,  16464 bytes
+O1  : 141 instructions,  16344 bytes
+O2  :  86 instructions,  16344 bytes
+O3  : 134 instructions,  16344 bytes
+Os  :  50 instructions,  16344 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011f0 <compute_with_calls>:
+00000000000012ab <compute_with_larger_call>:
+    12f0:	e8 fb fe ff ff       	call   11f0 <compute_with_calls>
+    12f5:	48 98                	cdqe
+    12f7:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    12fb:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    12ff:	81 7d f4 ff e0 f5 05 	cmp    DWORD PTR [rbp-0xc],0x5f5e0ff
+    1306:	7e e3                	jle    12eb <benchmark_inlining+0x1d>
+    1308:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    130c:	c9                   	leave
+    130d:	c3                   	ret
+
+    1330:	e8 76 ff ff ff       	call   12ab <compute_with_larger_call>
+    1335:	48 98                	cdqe
+    1337:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    133b:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    133f:	81 7d f4 7f 96 98 00 	cmp    DWORD PTR [rbp-0xc],0x98967f
+    1346:	7e e3                	jle    132b <benchmark_larger_calls+0x1d>
+    1348:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    134c:	c9                   	leave
+    134d:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+0000000000001630 <compute_with_calls>:
+00000000000016a0 <compute_with_larger_call>:
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 33.00%
+
+====================================================================

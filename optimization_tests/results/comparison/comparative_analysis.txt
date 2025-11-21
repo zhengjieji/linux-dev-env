@@ -1,0 +1,67 @@
+====================================================================
+           COMPARATIVE OPTIMIZATION ANALYSIS
+====================================================================
+
+This report compares the effectiveness of different optimizations
+across all tests.
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT REDUCTION (O0 → O3)
+--------------------------------------------------------------------
+
+Test                            O0      O3      Reduction
+
+01_const_propagation             120      12     90.0%
+03_branch_elimination            128      26     70.0%
+04_dead_code_elimination         126      18     80.0%
+05_strength_reduction            183      98     40.0%
+06_cse                           256     122     50.0%
+07_function_inlining             202     134     30.0%
+
+--------------------------------------------------------------------
+BINARY SIZE COMPARISON (bytes)
+--------------------------------------------------------------------
+
+Test                            O0      O2      O3      Os
+
+01_const_propagation             16216   16224   16224   16224
+02_loop_unrolling                16240   16248   16248   16248
+03_branch_elimination            16272   16280   16280   16280
+04_dead_code_elimination         16264   16272   16272   16272
+05_strength_reduction            16264   16272   16272   16272
+06_cse                           16280   16280   16280   16280
+07_function_inlining             16464   16344   16344   16344
+
+--------------------------------------------------------------------
+OPTIMIZATION EFFECTIVENESS RANKING
+--------------------------------------------------------------------
+
+Based on instruction count reduction, the optimizations ranked by
+effectiveness are:
+
+ 1. 01_const_propagation                 90.00% reduction
+ 2. 04_dead_code_elimination             85.00% reduction
+ 3. 03_branch_elimination                79.00% reduction
+ 4. 06_cse                               52.00% reduction
+ 5. 05_strength_reduction                46.00% reduction
+ 6. 07_function_inlining                 33.00% reduction
+
+--------------------------------------------------------------------
+KEY FINDINGS
+--------------------------------------------------------------------
+
+1. Most Effective Optimizations:
+   - Optimizations that show the highest instruction count reduction
+   - Typically: constant propagation, dead code elimination
+
+2. Size vs Speed Trade-offs:
+   - O3 may increase binary size for marginal speed gains
+   - Os provides good balance for size-constrained environments
+
+3. Recommendations for BPF Optimization:
+   - Focus on optimizations showing >50% instruction reduction
+   - Prioritize constant propagation with verifier constraints
+   - Consider loop unrolling for bounded loops
+   - Branch elimination particularly valuable for runtime checks
+
+====================================================================

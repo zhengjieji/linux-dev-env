@@ -1,0 +1,47 @@
+====================================================================
+                    DEAD CODE ELIMINATION ANALYSIS
+====================================================================
+Test: 04_dead_code_elimination
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 126 instructions,  16264 bytes
+O1  :  72 instructions,  16272 bytes
+O2  :  18 instructions,  16272 bytes
+O3  :  18 instructions,  16272 bytes
+Os  :  14 instructions,  16272 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011a9 <compute_with_dead_code>:
+0000000000001200 <compute_optimized>:
+    1235:	e8 6f ff ff ff       	call   11a9 <compute_with_dead_code>
+    123a:	48 98                	cdqe
+    123c:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    1240:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    1244:	81 7d f4 ff e0 f5 05 	cmp    DWORD PTR [rbp-0xc],0x5f5e0ff
+    124b:	7e e3                	jle    1230 <benchmark_dead_code_elimination+0x1d>
+    124d:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    1251:	c9                   	leave
+    1252:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+00000000000012b0 <compute_with_dead_code>:
+00000000000012c0 <compute_optimized>:
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 85.00%
+
+====================================================================

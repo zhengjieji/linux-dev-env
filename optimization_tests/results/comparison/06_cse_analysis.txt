@@ -1,0 +1,57 @@
+====================================================================
+                    COMMON SUBEXPRESSION ELIMINATION ANALYSIS
+====================================================================
+Test: 06_cse
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 256 instructions,  16280 bytes
+O1  : 152 instructions,  16280 bytes
+O2  : 122 instructions,  16280 bytes
+O3  : 122 instructions,  16280 bytes
+Os  :  87 instructions,  16280 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011a9 <compute_with_redundancy>:
+000000000000125f <compute_optimized>:
+    13c4:	e8 e0 fd ff ff       	call   11a9 <compute_with_redundancy>
+    13c9:	48 98                	cdqe
+    13cb:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    13cf:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+    13d2:	8d 50 02             	lea    edx,[rax+0x2]
+    13d5:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+    13d8:	8d 48 01             	lea    ecx,[rax+0x1]
+    13db:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+    13de:	89 ce                	mov    esi,ecx
+    13e0:	89 c7                	mov    edi,eax
+    13e2:	e8 22 ff ff ff       	call   1309 <complex_computation>
+    13e7:	48 98                	cdqe
+    13e9:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    13ed:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    13f1:	81 7d f4 7f f0 fa 02 	cmp    DWORD PTR [rbp-0xc],0x2faf07f
+    13f8:	7e bd                	jle    13b7 <benchmark_cse+0x1d>
+    13fa:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    13fe:	c9                   	leave
+    13ff:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+00000000000012b0 <compute_with_redundancy>:
+0000000000001300 <compute_optimized>:
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 52.00%
+
+====================================================================

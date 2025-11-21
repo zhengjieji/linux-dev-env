@@ -1,0 +1,79 @@
+====================================================================
+                    BRANCH ELIMINATION ANALYSIS
+====================================================================
+Test: 03_branch_elimination
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 128 instructions,  16272 bytes
+O1  :  79 instructions,  16280 bytes
+O2  :  26 instructions,  16280 bytes
+O3  :  26 instructions,  16280 bytes
+Os  :  23 instructions,  16280 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011a9 <compute_with_known_branch>:
+00000000000011ce <compute_with_runtime_branch>:
+    11e6:	74 0d                	je     11f5 <compute_with_runtime_branch+0x27>
+    11e8:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+    11eb:	83 c0 05             	add    eax,0x5
+    11ee:	01 c0                	add    eax,eax
+    11f0:	89 45 fc             	mov    DWORD PTR [rbp-0x4],eax
+    11f3:	eb 0f                	jmp    1204 <compute_with_runtime_branch+0x36>
+    11f5:	8b 55 fc             	mov    edx,DWORD PTR [rbp-0x4]
+    11f8:	89 d0                	mov    eax,edx
+    11fa:	01 c0                	add    eax,eax
+    11fc:	01 d0                	add    eax,edx
+    11fe:	83 c0 14             	add    eax,0x14
+    1201:	89 45 fc             	mov    DWORD PTR [rbp-0x4],eax
+    1204:	83 7d e8 01          	cmp    DWORD PTR [rbp-0x18],0x1
+    1208:	75 04                	jne    120e <compute_with_runtime_branch+0x40>
+    120a:	83 45 fc 05          	add    DWORD PTR [rbp-0x4],0x5
+    120e:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+    1211:	5d                   	pop    rbp
+    1212:	c3                   	ret
+
+    1235:	e8 6f ff ff ff       	call   11a9 <compute_with_known_branch>
+    123a:	48 98                	cdqe
+    123c:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    1240:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    1244:	81 7d f4 ff e0 f5 05 	cmp    DWORD PTR [rbp-0xc],0x5f5e0ff
+    124b:	7e e3                	jle    1230 <benchmark_branch_elimination+0x1d>
+    124d:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    1251:	c9                   	leave
+    1252:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+00000000000012b0 <compute_with_known_branch>:
+00000000000012c0 <compute_with_runtime_branch>:
+    12c6:	74 18                	je     12e0 <compute_with_runtime_branch+0x20>
+    12c8:	8d 44 3f 0a          	lea    eax,[rdi+rdi*1+0xa]
+    12cc:	83 fe 01             	cmp    esi,0x1
+    12cf:	8d 50 05             	lea    edx,[rax+0x5]
+    12d2:	0f 44 c2             	cmove  eax,edx
+    12d5:	c3                   	ret
+    12d6:	66 2e 0f 1f 84 00 00 	cs nop WORD PTR [rax+rax*1+0x0]
+    12dd:	00 00 00 
+    12e0:	8d 44 7f 14          	lea    eax,[rdi+rdi*2+0x14]
+    12e4:	c3                   	ret
+    12e5:	66 66 2e 0f 1f 84 00 	data16 cs nop WORD PTR [rax+rax*1+0x0]
+    12ec:	00 00 00 00 
+
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 79.00%
+
+====================================================================

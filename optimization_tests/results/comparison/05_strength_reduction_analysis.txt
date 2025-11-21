@@ -1,0 +1,75 @@
+====================================================================
+                    STRENGTH REDUCTION ANALYSIS
+====================================================================
+Test: 05_strength_reduction
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 183 instructions,  16264 bytes
+O1  : 117 instructions,  16272 bytes
+O2  :  60 instructions,  16272 bytes
+O3  :  98 instructions,  16272 bytes
+Os  :  51 instructions,  16272 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011a9 <compute_with_expensive_ops>:
+    1223:	eb 10                	jmp    1235 <compute_with_expensive_ops+0x8c>
+    1225:	8b 55 f8             	mov    edx,DWORD PTR [rbp-0x8]
+    1228:	89 d0                	mov    eax,edx
+    122a:	01 c0                	add    eax,eax
+    122c:	01 d0                	add    eax,edx
+    122e:	01 45 f4             	add    DWORD PTR [rbp-0xc],eax
+    1231:	83 45 f8 01          	add    DWORD PTR [rbp-0x8],0x1
+    1235:	83 7d f8 09          	cmp    DWORD PTR [rbp-0x8],0x9
+    1239:	7e ea                	jle    1225 <compute_with_expensive_ops+0x7c>
+    123b:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+    123e:	01 45 fc             	add    DWORD PTR [rbp-0x4],eax
+    1241:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+    1244:	5d                   	pop    rbp
+    1245:	c3                   	ret
+
+0000000000001246 <compute_optimized>:
+    12aa:	eb 0e                	jmp    12ba <compute_optimized+0x74>
+    12ac:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+    12af:	01 45 f0             	add    DWORD PTR [rbp-0x10],eax
+    12b2:	83 45 f4 03          	add    DWORD PTR [rbp-0xc],0x3
+    12b6:	83 45 f8 01          	add    DWORD PTR [rbp-0x8],0x1
+    12ba:	83 7d f8 09          	cmp    DWORD PTR [rbp-0x8],0x9
+    12be:	7e ec                	jle    12ac <compute_optimized+0x66>
+    12c0:	8b 45 f0             	mov    eax,DWORD PTR [rbp-0x10]
+    12c3:	01 45 fc             	add    DWORD PTR [rbp-0x4],eax
+    12c6:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+    12c9:	5d                   	pop    rbp
+    12ca:	c3                   	ret
+
+    12ed:	e8 b7 fe ff ff       	call   11a9 <compute_with_expensive_ops>
+    12f2:	48 98                	cdqe
+    12f4:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    12f8:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    12fc:	81 7d f4 ff e0 f5 05 	cmp    DWORD PTR [rbp-0xc],0x5f5e0ff
+    1303:	7e e3                	jle    12e8 <benchmark_strength_reduction+0x1d>
+    1305:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    1309:	c9                   	leave
+    130a:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+0000000000001460 <compute_with_expensive_ops>:
+00000000000014b0 <compute_optimized>:
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 46.00%
+
+====================================================================

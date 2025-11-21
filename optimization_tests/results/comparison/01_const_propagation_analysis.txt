@@ -1,0 +1,45 @@
+====================================================================
+                    CONSTANT PROPAGATION ANALYSIS
+====================================================================
+Test: 01_const_propagation
+Generated: Wed Nov  5 11:09:56 AM EST 2025
+
+--------------------------------------------------------------------
+INSTRUCTION COUNT COMPARISON
+--------------------------------------------------------------------
+
+O0  : 120 instructions,  16216 bytes
+O1  :  69 instructions,  16224 bytes
+O2  :  12 instructions,  16224 bytes
+O3  :  12 instructions,  16224 bytes
+Os  :  11 instructions,  16224 bytes
+
+--------------------------------------------------------------------
+KEY FUNCTION ASSEMBLY (O0 vs O3)
+--------------------------------------------------------------------
+
+=== O0 (No Optimization) ===
+
+00000000000011a9 <compute_with_constants>:
+    1232:	e8 72 ff ff ff       	call   11a9 <compute_with_constants>
+    1237:	48 98                	cdqe
+    1239:	48 01 45 f8          	add    QWORD PTR [rbp-0x8],rax
+    123d:	83 45 f4 01          	add    DWORD PTR [rbp-0xc],0x1
+    1241:	81 7d f4 ff e0 f5 05 	cmp    DWORD PTR [rbp-0xc],0x5f5e0ff
+    1248:	7e e3                	jle    122d <benchmark_const_propagation+0x1d>
+    124a:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+    124e:	c9                   	leave
+    124f:	c3                   	ret
+
+
+=== O3 (Aggressive Optimization) ===
+
+00000000000012b0 <compute_with_constants>:
+
+--------------------------------------------------------------------
+OPTIMIZATION IMPACT
+--------------------------------------------------------------------
+
+Instruction reduction: 90.00%
+
+====================================================================

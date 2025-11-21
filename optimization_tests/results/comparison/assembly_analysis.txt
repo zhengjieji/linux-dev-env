@@ -1,0 +1,60 @@
+Compiler Optimization Tests - Assembly Analysis
+Generated: Wed Nov  5 11:09:32 AM EST 2025
+========================================
+
+Test: 01_const_propagation
+----------------------------------------
+  -O0: 125 instructions, 16216 bytes
+  -O1: 74 instructions, 16224 bytes
+  -O2: 16 instructions, 16224 bytes
+  -O3: 16 instructions, 16224 bytes
+  -Os: 15 instructions, 16224 bytes
+
+Test: 02_loop_unrolling
+----------------------------------------
+  -O0: 0 instructions, 16240 bytes
+  -O1: 0 instructions, 16248 bytes
+  -O2: 0 instructions, 16248 bytes
+  -O3: 0 instructions, 16248 bytes
+  -Os: 0 instructions, 16248 bytes
+
+Test: 03_branch_elimination
+----------------------------------------
+  -O0: 134 instructions, 16272 bytes
+  -O1: 85 instructions, 16280 bytes
+  -O2: 31 instructions, 16280 bytes
+  -O3: 31 instructions, 16280 bytes
+  -Os: 28 instructions, 16280 bytes
+
+Test: 04_dead_code_elimination
+----------------------------------------
+  -O0: 132 instructions, 16264 bytes
+  -O1: 78 instructions, 16272 bytes
+  -O2: 23 instructions, 16272 bytes
+  -O3: 23 instructions, 16272 bytes
+  -Os: 19 instructions, 16272 bytes
+
+Test: 05_strength_reduction
+----------------------------------------
+  -O0: 189 instructions, 16264 bytes
+  -O1: 123 instructions, 16272 bytes
+  -O2: 65 instructions, 16272 bytes
+  -O3: 103 instructions, 16272 bytes
+  -Os: 56 instructions, 16272 bytes
+
+Test: 06_cse
+----------------------------------------
+  -O0: 262 instructions, 16280 bytes
+  -O1: 159 instructions, 16280 bytes
+  -O2: 126 instructions, 16280 bytes
+  -O3: 126 instructions, 16280 bytes
+  -Os: 93 instructions, 16280 bytes
+
+Test: 07_function_inlining
+----------------------------------------
+  -O0: 208 instructions, 16464 bytes
+  -O1: 149 instructions, 16344 bytes
+  -O2: 93 instructions, 16344 bytes
+  -O3: 139 instructions, 16344 bytes
+  -Os: 57 instructions, 16344 bytes
+
