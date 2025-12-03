@@ -1,11 +1,11 @@
 #!/bin/bash
-# Run all BPF programs sequentially via BPF_PROG_TEST_RUN
+# Run all BPF programs sequentially and collect results
 #
 # This script:
 # 1. For each BPF program in bpf_progs/:
 #    - Load the program
-#    - Run BPF_PROG_TEST_RUN benchmark
-#    - Save results with program-specific names
+#    - Run BPF_PROG_TEST_RUN trigger
+#    - Save outputs with program-specific names
 #    - Unload the program
 # 2. Generate a summary report
 
@@ -16,9 +16,10 @@ BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$BASE_DIR"
 
 ITERATIONS=${1:-1}
+TRACE_PIPE="/sys/kernel/debug/tracing/trace_pipe"
 
 # Check root permissions
-if [ "$(id -u)" -ne 0 ]; then
+if [ ! -r "$TRACE_PIPE" ]; then
     echo "Error: This script requires root permissions"
     echo "Please run with sudo"
     exit 1
@@ -53,7 +54,7 @@ mkdir -p outputs
 SUMMARY_FILE="outputs/summary.txt"
 > "$SUMMARY_FILE"
 
-echo "=== BPF_PROG_TEST_RUN Benchmark Summary ===" >> "$SUMMARY_FILE"
+echo "=== BPF Micro-Benchmark Summary ===" >> "$SUMMARY_FILE"
 echo "Date: $(date)" >> "$SUMMARY_FILE"
 echo "Iterations per program: $ITERATIONS" >> "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
@@ -67,14 +68,15 @@ for BPF_PROG in "${BPF_PROGS[@]}"; do
     echo "Testing: $PROG_NAME"
     echo "========================================"
 
-    # Output file for this program
-    RESULT_LOG="outputs/${PROG_NAME}_benchmark.log"
+    # Output files for this program
+    TRACE_LOG="outputs/${PROG_NAME}_trace.log"
+    DMESG_LOG="outputs/${PROG_NAME}_dmesg.log"
 
     echo "Program: $PROG_NAME" >> "$SUMMARY_FILE"
     echo "----------------------------------------" >> "$SUMMARY_FILE"
 
     # Step 1: Load program
-    echo "[1/3] Loading $PROG_NAME..."
+    echo "[1/4] Loading $PROG_NAME..."
     ./loader "$BPF_PROG" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "✗ Failed to load $PROG_NAME"
@@ -83,45 +85,58 @@ for BPF_PROG in "${BPF_PROGS[@]}"; do
         continue
     fi
 
+    sleep 1
+
+    # Step 2: Clear buffers
+    echo "[2/4] Clearing buffers..."
+    dmesg -C
+    echo > /sys/kernel/debug/tracing/trace
+
+    # Step 3: Start trace capture and run trigger
+    echo "[3/4] Running trigger ($ITERATIONS iterations)..."
+
+    timeout 30 cat "$TRACE_PIPE" > "$TRACE_LOG" 2>/dev/null &
+    TRACE_PID=$!
     sleep 0.5
 
-    # Step 2: Run benchmark
-    echo "[2/3] Running BPF_PROG_TEST_RUN ($ITERATIONS iterations)..."
+    ./trigger "$ITERATIONS" > /dev/null 2>&1
 
-    # Extract just the function name (remove test_ prefix if present)
-    FUNC_NAME="${PROG_NAME#test_}"
+    sleep 3
+    kill $TRACE_PID 2>/dev/null || true
+    wait $TRACE_PID 2>/dev/null || true
 
-    ./trigger "$ITERATIONS" > "$RESULT_LOG" 2>&1
-    TRIGGER_EXIT=$?
+    # Capture dmesg
+    dmesg > "$DMESG_LOG"
 
-    # Step 3: Unload program
-    echo "[3/3] Unloading $PROG_NAME..."
+    # Step 4: Unload program
+    echo "[4/4] Unloading $PROG_NAME..."
     ./scripts/detach.sh > /dev/null 2>&1
 
     # Analyze results
-    if [ $TRIGGER_EXIT -eq 0 ] && [ -s "$RESULT_LOG" ]; then
-        # Extract timing info from log
-        AVG_NS=$(grep -oP 'Avg per run:\s+\K[\d.]+' "$RESULT_LOG" | tail -1)
-        TOTAL_NS=$(grep -oP 'Total duration:\s+\K\d+' "$RESULT_LOG" | tail -1)
-
-        if [ -n "$AVG_NS" ]; then
-            echo "✓ Avg execution time: ${AVG_NS} ns"
-            echo "Avg per run: ${AVG_NS} ns" >> "$SUMMARY_FILE"
-            echo "Total duration: ${TOTAL_NS} ns" >> "$SUMMARY_FILE"
-        else
-            echo "✓ Benchmark completed (see log for details)"
-        fi
-        echo "Result file: $RESULT_LOG" >> "$SUMMARY_FILE"
-        echo "Status: COMPLETED" >> "$SUMMARY_FILE"
+    if [ -s "$TRACE_LOG" ]; then
+        TRACE_LINES=$(wc -l < "$TRACE_LOG")
+        echo "✓ Captured $TRACE_LINES trace lines"
+        echo "Trace lines: $TRACE_LINES" >> "$SUMMARY_FILE"
+        echo "Trace file: $TRACE_LOG" >> "$SUMMARY_FILE"
     else
-        echo "✗ Benchmark failed or no output"
-        echo "Status: FAILED (benchmark error)" >> "$SUMMARY_FILE"
+        echo "✗ Warning: No trace output"
+        echo "Trace lines: 0 (EMPTY)" >> "$SUMMARY_FILE"
     fi
 
+    if [ -s "$DMESG_LOG" ]; then
+        DMESG_LINES=$(wc -l < "$DMESG_LOG")
+        echo "✓ Captured $DMESG_LINES dmesg lines"
+        echo "Dmesg lines: $DMESG_LINES" >> "$SUMMARY_FILE"
+        echo "Dmesg file: $DMESG_LOG" >> "$SUMMARY_FILE"
+    else
+        echo "Dmesg lines: 0" >> "$SUMMARY_FILE"
+    fi
+
+    echo "Status: COMPLETED" >> "$SUMMARY_FILE"
     echo "" >> "$SUMMARY_FILE"
 
-    # Brief pause between tests
-    sleep 1
+    # Wait between tests
+    sleep 2
 done
 
 echo ""

@@ -14,6 +14,8 @@ This approach is ideal for:
 - Benchmarking without side effects
 - Testing programs in isolation
 
+**Note**: For `BPF_PROG_TYPE_RAW_TRACEPOINT`, the kernel does NOT support `repeat` or `duration` fields in `BPF_PROG_TEST_RUN`. We measure time using `clock_gettime()` instead.
+
 ## Quick Start
 
 ```bash
