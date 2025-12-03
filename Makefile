@@ -56,3 +56,71 @@ bpftool:
 
 bpftool-clean:
 	docker run --rm -v ${LINUX}:/linux -w /linux/tools/bpf/bpftool $(RUNTIME_IMAGE) make clean -j`nproc`
+
+# =============================================================================
+# BPF Kernel Patch - Track kernel file modifications across experiments
+# See tools/bpf-kernel-patch/README.md for documentation
+# =============================================================================
+
+PATCH_SCRIPT := ./tools/bpf-kernel-patch/patch.sh
+
+patch-new:
+	@$(PATCH_SCRIPT) new $(NAME)
+
+patch-list:
+	@$(PATCH_SCRIPT) list
+
+patch-delete:
+	@$(PATCH_SCRIPT) delete $(NAME)
+
+patch-activate:
+	@$(PATCH_SCRIPT) activate $(NAME)
+
+patch-track:
+ifdef FILES
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) track $(FILES)
+else ifdef FILE
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) track $(FILE)
+else
+	@echo "Usage: make patch-track FILE=<path> or FILES=\"<path1> <path2>\""
+	@exit 1
+endif
+
+patch-track-add:
+ifdef FILES
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) track-add $(FILES)
+else ifdef FILE
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) track-add $(FILE)
+else
+	@echo "Usage: make patch-track-add FILE=<path> or FILES=\"<path1> <path2>\""
+	@exit 1
+endif
+
+patch-untrack:
+ifdef FILES
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) untrack $(FILES)
+else ifdef FILE
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) untrack $(FILE)
+else
+	@echo "Usage: make patch-untrack FILE=<path> or FILES=\"<path1> <path2>\""
+	@exit 1
+endif
+
+patch-apply:
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) apply
+
+patch-revert:
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) revert
+
+patch-status:
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) status
+
+patch-diff:
+ifdef FILE
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) diff $(FILE)
+else
+	@LINUX=$(LINUX) $(PATCH_SCRIPT) diff
+endif
+
+.PHONY: patch-new patch-list patch-delete patch-activate patch-track patch-track-add \
+        patch-untrack patch-apply patch-revert patch-status patch-diff

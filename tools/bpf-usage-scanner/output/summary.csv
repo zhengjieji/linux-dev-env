@@ -1,0 +1,8 @@
+project,helper_count,kfunc_count,unique_helpers,unique_kfuncs,top_helpers,top_kfuncs
+cilium,485,5,38,1,bpf_map_lookup_elem(200);bpf_map_update_elem(80);bpf_csum_diff(53);bpf_map_delete_elem(29);bpf_ktime_get_ns(14),bpf_sock_destroy(5)
+cilium-cli,0,0,0,0,,
+hubble,0,0,0,0,,
+hubble-ui,0,0,0,0,,
+katran,259,0,22,0,bpf_map_lookup_elem(160);bpf_csum_diff(36);bpf_skb_pull_data(10);bpf_skb_adjust_room(8);bpf_map_update_elem(8),
+pwru,780,208,24,11,bpf_snprintf(574);bpf_strncmp(62);bpf_setsockopt(25);bpf_strtol(20);bpf_probe_read_kernel(14),bpf_strlen(101);bpf_strcmp(44);bpf_strchr(20);bpf_strrchr(17);bpf_strcspn(8)
+tetragon,524,340,31,164,bpf_probe_read(167);bpf_map_lookup_elem(150);bpf_get_current_pid_tgid(37);bpf_tail_call(29);bpf_probe_read_kernel(26),bpf_strcmp(11);bpf_iter_num_next(4);bpf_iter_num_new(4);bpf_dynptr_slice_rdwr(2);bpf_get_fsverity_digest(2)
