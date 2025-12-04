@@ -104,7 +104,7 @@ cmd_new() {
     local name="$1"
 
     if [[ -z "$name" ]]; then
-        die "Usage: make patch-new NAME=<name>"
+        die "Usage: make new NAME=<name>"
     fi
 
     if exp_exists "$name"; then
@@ -115,7 +115,7 @@ cmd_new() {
     local active
     active=$(get_active)
     if [[ -n "$active" ]] && is_applied; then
-        die "Experiment '$active' has applied changes. Run 'make patch-revert' first."
+        die "Experiment '$active' has applied changes. Run 'make revert' first."
     fi
 
     local exp_dir
@@ -200,7 +200,7 @@ cmd_delete() {
     active=$(get_active)
 
     if [[ "$name" == "$active" ]] && is_applied; then
-        die "Cannot delete active experiment with applied changes. Run 'make patch-revert' first."
+        die "Cannot delete active experiment with applied changes. Run 'make revert' first."
     fi
 
     rm -rf "$(get_exp_dir "$name")"
@@ -225,20 +225,20 @@ cmd_track() {
 
     if [[ ${#files[@]} -eq 0 ]]; then
         if [[ "$mode" == "replace" ]]; then
-            die "Usage: make patch-track FILE=<path>"
+            die "Usage: make track FILE=<path>"
         else
-            die "Usage: make patch-track-add FILE=<path>"
+            die "Usage: make track-add FILE=<path>"
         fi
     fi
 
     local active
     active=$(get_active)
     if [[ -z "$active" ]]; then
-        die "No active experiment. Run 'make patch-new NAME=xxx' first."
+        die "No active experiment. Run 'make new NAME=xxx' first."
     fi
 
     if is_applied; then
-        die "Changes are currently applied. Run 'make patch-revert' first."
+        die "Changes are currently applied. Run 'make revert' first."
     fi
 
     local exp_dir
@@ -316,7 +316,7 @@ cmd_untrack() {
     local files=("$@")
 
     if [[ ${#files[@]} -eq 0 ]]; then
-        die "Usage: make patch-untrack FILE=<path>"
+        die "Usage: make untrack FILE=<path>"
     fi
 
     local active
@@ -326,7 +326,7 @@ cmd_untrack() {
     fi
 
     if is_applied; then
-        die "Changes are currently applied. Run 'make patch-revert' first."
+        die "Changes are currently applied. Run 'make revert' first."
     fi
 
     local exp_dir
@@ -653,7 +653,7 @@ cmd_activate() {
     local name="$1"
 
     if [[ -z "$name" ]]; then
-        die "Usage: make patch-activate NAME=<name>"
+        die "Usage: make activate NAME=<name>"
     fi
 
     if ! exp_exists "$name"; then
@@ -669,7 +669,7 @@ cmd_activate() {
     fi
 
     if [[ -n "$active" ]] && is_applied; then
-        die "Experiment '$active' has applied changes. Run 'make patch-revert' first."
+        die "Experiment '$active' has applied changes. Run 'make revert' first."
     fi
 
     jq --arg name "$name" '.active = $name | .applied = false' "$STATE_FILE" > "$STATE_FILE.tmp"
@@ -726,20 +726,20 @@ main() {
         *)
             echo "BPF Kernel Patch - Track kernel modifications across experiments"
             echo ""
-            echo "Usage: make patch-<command> [OPTIONS]"
+            echo "Usage: make <command> [OPTIONS]"
             echo ""
             echo "Commands:"
-            echo "  patch-new NAME=xxx           Create new experiment and set as active"
-            echo "  patch-list                   List all experiments"
-            echo "  patch-delete NAME=xxx        Delete an experiment"
-            echo "  patch-activate NAME=xxx      Set experiment as active"
-            echo "  patch-track FILE=xxx         Track existing kernel file for replacement"
-            echo "  patch-track-add FILE=xxx     Track new file to be added"
-            echo "  patch-untrack FILE=xxx       Stop tracking file"
-            echo "  patch-apply                  Apply patches to kernel"
-            echo "  patch-revert                 Revert kernel to original state"
-            echo "  patch-status                 Show current experiment status"
-            echo "  patch-diff [FILE=xxx]        Show diff between backup and patch"
+            echo "  new NAME=xxx           Create new experiment and set as active"
+            echo "  list                   List all experiments"
+            echo "  delete NAME=xxx        Delete an experiment"
+            echo "  activate NAME=xxx      Set experiment as active"
+            echo "  track FILE=xxx         Track existing kernel file for replacement"
+            echo "  track-add FILE=xxx     Track new file to be added"
+            echo "  untrack FILE=xxx       Stop tracking file"
+            echo "  apply                  Apply patches to kernel"
+            echo "  revert                 Revert kernel to original state"
+            echo "  status                 Show current experiment status"
+            echo "  diff [FILE=xxx]        Show diff between backup and patch"
             exit 1
             ;;
     esac
