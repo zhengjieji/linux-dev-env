@@ -1,0 +1,430 @@
+#!/bin/bash
+# Dual VM script for two QEMU VMs that can communicate with each other
+# Based on yifei-q script
+#
+# Usage:
+#   ./dual-vm --role vm1    # Start as VM1 (server/host)
+#   ./dual-vm --role vm2    # Start as VM2 (client)
+#
+# VM1 listens on socket, VM2 connects to it
+# Both VMs get a private network 192.168.100.0/24 for inter-VM communication
+
+usage() {
+    echo "dual-vm [options] [path to bzImage]"
+    echo
+    echo "Run it from the kernel directory (make sure .config is there)"
+    echo
+    echo "Required:"
+    echo "    --role <vm1|vm2>  - VM role (vm1=server, vm2=client)"
+    echo
+    echo "Options:"
+    echo "    -m                - run depmod and modprobe"
+    echo "    -s                - start SSH server"
+    echo "    -c <cmdline>      - pass extra kernel cmdline options"
+    echo "    -N <cpus>         - number of CPUs (default: 4)"
+    echo "    -M <memory>       - memory in MB (default: 2048)"
+    echo "    --socket-port <port> - socket port for VM communication (default: 12345)"
+    exit 1
+}
+
+# This function is called _BEFORE_ QEMU starts (on host).
+host() {
+    local kernel="$1"
+    shift
+
+    if [ -z "$kernel" ]; then
+        if [ -e "arch/x86/boot/bzImage" ]; then
+            kernel="arch/x86/boot/bzImage"
+        fi
+        [ -n "$kernel" ] || usage
+    fi
+    [ -e ".config" ] || usage
+
+    local cmdline
+
+    local fs
+    fs+=" -nodefaults"
+    fs+=" -fsdev local,multidevs=remap,id=vfs1,path=/,security_model=none,readonly=on"
+    fs+=" -fsdev local,multidevs=remap,id=vfs2,path=$(pwd),security_model=none"
+    fs+=" -device virtio-9p-pci,fsdev=vfs1,mount_tag=/dev/root"
+    fs+=" -device virtio-9p-pci,fsdev=vfs2,mount_tag=/dev/kernel"
+
+    local console
+    console+=" -display none"
+    console+=" -serial mon:stdio"
+    console+=" -serial tcp::${SERIAL_PORT},server,nowait"
+
+    cmdline+=" earlyprintk=serial,ttyS0,115200"
+    cmdline+=" console=ttyS0,115200"
+    cmdline+=" kgdboc=ttyS1,115200"
+
+    # Network configuration
+    # net0: inter-VM communication via socket
+    # net1: external network with SSH access
+    local net
+
+    # Use UDP multicast for inter-VM communication (more reliable than socket)
+    # Both VMs join the same multicast group
+    if [ "$ROLE" = "vm1" ]; then
+        net+=" -netdev socket,id=net0,mcast=230.0.0.1:${SOCKET_PORT},localaddr=127.0.0.1"
+        net+=" -device virtio-net-pci,netdev=net0,mac=52:54:00:00:01:01"
+    else
+        net+=" -netdev socket,id=net0,mcast=230.0.0.1:${SOCKET_PORT},localaddr=127.0.0.1"
+        net+=" -device virtio-net-pci,netdev=net0,mac=52:54:00:00:01:02"
+    fi
+
+    # External network with SSH (different ports for each VM)
+    if [ "$SSH" = "y" ]; then
+        if [ -f /.dockerenv ]; then
+            net+=" -netdev user,id=net1,hostfwd=tcp::${SSH_PORT}-:22,hostfwd=tcp::${NET_PORT}-:52223"
+        else
+            net+=" -netdev user,id=net1,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22"
+        fi
+    else
+        net+=" -netdev user,id=net1"
+    fi
+    net+=" -device virtio-net-pci,netdev=net1"
+
+    local opts
+    [ "$MODULES" = "y" ] && opts+=" -m"
+    [ "$SSH" = "y" ] && opts+=" -s"
+
+    cmdline+=" rootfstype=9p"
+    cmdline+=" rootflags=version=9p2000.L,trans=virtio,msize=104857600,access=any"
+    cmdline+=" ro"
+    cmdline+=" nokaslr"
+    cmdline+=" $CMDLINE"
+    cmdline+=" init=/bin/sh -- -c \"$(realpath $0) -g $opts -H $HOME -k '$(pwd)' -a '$*' --role $ROLE\""
+
+    echo "Starting $ROLE with socket port $SOCKET_PORT, SSH port $SSH_PORT"
+
+    qemu-system-x86_64 \
+        -nodefaults \
+        -no-reboot \
+        -machine accel=kvm:tcg \
+        -device i6300esb \
+        -device virtio-rng-pci \
+        -cpu host \
+        -smp $NRCPU \
+        -m $MEMORY \
+        $fs \
+        $console \
+        $net \
+        $QEMUARG \
+        -kernel "$kernel" \
+        -append "$cmdline" \
+        -gdb tcp::$GDB_PORT
+}
+
+say() {
+    trap 'tput sgr0' 2 #SIGINT
+    tput setaf 2
+    echo ">" "$@"
+    tput sgr0
+}
+
+# This function is called _AFTER_ QEMU starts (on guest).
+guest() {
+    export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+    say pivot root
+
+    mount -n -t proc -o nosuid,noexec,nodev proc /proc/
+
+    mount -n -t tmpfs tmpfs /tmp
+    mkdir -p /tmp/rootdir-overlay/{lower,upper,work,mnt}
+    mount --bind / /tmp/rootdir-overlay/lower
+    mount -t overlay overlay -o lowerdir=/tmp/rootdir-overlay/lower,upperdir=/tmp/rootdir-overlay/upper,workdir=/tmp/rootdir-overlay/work /tmp/rootdir-overlay/mnt
+    pivot_root /tmp/rootdir-overlay/mnt{,/mnt}
+    cd /
+
+    say early setup
+
+    mount -n -t sysfs -o nosuid,noexec,nodev sys /sys/
+
+    mount -n -t tmpfs tmpfs /tmp
+    mount -n -t tmpfs tmpfs /var/log
+    mount -n -t tmpfs tmpfs /run
+
+    rm -f /etc/fstab
+    touch /etc/fstab
+
+    mount -n -t proc -o nosuid,noexec,nodev proc /proc/
+    mount -n -t configfs configfs /sys/kernel/config
+    mount -n -t debugfs debugfs /sys/kernel/debug
+    mount -n -t securityfs security /sys/kernel/security
+    mount -n -t devtmpfs -o mode=0755,nosuid,noexec devtmpfs /dev
+
+    mkdir -p -m 0755 /dev/shm /dev/pts
+    mount -n -t devpts -o gid=tty,mode=620,noexec,nosuid devpts /dev/pts
+    mount -n -t tmpfs -o mode=1777,nosuid,nodev tmpfs /dev/shm
+
+    ln -s /proc/self/fd /dev/fd
+
+    mount --move /mnt /tmp
+    mount -n -t tmpfs tmpfs /mnt
+    mkdir /mnt/base-root
+    mount --move /tmp /mnt/base-root
+
+    local kver="`uname -r`"
+    local mods="$(find /sys/devices -type f -name modalias -print0 | xargs -0 cat | sort | uniq)"
+    local mods_nr=$(echo "$mods" | wc -w)
+
+    say modules /lib/modules/$kver $mods_nr modules
+    mount -n -t 9p -o version=9p2000.L,trans=virtio,msize=104857600 /dev/kernel $KERNEL
+    mount -n -t tmpfs tmpfs /lib/modules
+    mkdir "/lib/modules/$kver"
+    ln -s $KERNEL "/lib/modules/$kver/source"
+    ln -s $KERNEL "/lib/modules/$kver/build"
+    ln -s $KERNEL "/lib/modules/$kver/kernel"
+
+    cp $KERNEL/modules.builtin "/lib/modules/$kver/modules.builtin"
+    cp $KERNEL/modules.builtin.modinfo "/lib/modules/$kver/modules.builtin.modinfo"
+    cp $KERNEL/modules.order "/lib/modules/$kver/modules.order"
+
+    # make sure config points to the right place
+    mount -n -t tmpfs tmpfs /boot
+    ln -s $KERNEL/.config /boot/config-$kver
+
+    if [ "$MODULES" = "y" ]; then
+        if [ ! -e $KERNEL/modules.dep.bin ]; then
+            say modules.dep.bin not found, running depmod, may take awhile
+            depmod -a 2>/dev/null
+        fi
+        modprobe -q -a -- $mods
+    fi
+
+    say networking
+
+    if [ "$ROLE" = "vm1" ]; then
+        hostname vm1
+        echo vm1 > /etc/hostname
+    else
+        hostname vm2
+        echo vm2 > /etc/hostname
+    fi
+
+    ip link set dev lo up
+
+    rm -f /etc/resolv.conf
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
+    # Find network interfaces by MAC address
+    # Socket network MAC: 52:54:00:00:01:01 (VM1) or 52:54:00:00:01:02 (VM2)
+    local ifaces=($(ls /sys/class/net | grep -v lo))
+    say "Found interfaces: ${ifaces[*]}"
+
+    local inter_vm_iface=""
+    local ext_iface=""
+
+    # Identify interfaces by MAC address
+    if [ "$ROLE" = "vm1" ]; then
+        local socket_mac="52:54:00:00:01:01"
+    else
+        local socket_mac="52:54:00:00:01:02"
+    fi
+
+    for iface in "${ifaces[@]}"; do
+        local mac=$(cat /sys/class/net/$iface/address 2>/dev/null)
+        say "Interface $iface has MAC $mac"
+        if [ "$mac" = "$socket_mac" ]; then
+            inter_vm_iface="$iface"
+        else
+            ext_iface="$iface"
+        fi
+    done
+
+    # Configure inter-VM network (socket network)
+    if [ -n "$inter_vm_iface" ]; then
+        say "Configuring inter-VM interface $inter_vm_iface"
+        ip link set dev $inter_vm_iface up
+        if [ "$ROLE" = "vm1" ]; then
+            ip addr add 192.168.100.1/24 dev $inter_vm_iface
+            say "VM1 IP: 192.168.100.1 on $inter_vm_iface"
+        else
+            ip addr add 192.168.100.2/24 dev $inter_vm_iface
+            say "VM2 IP: 192.168.100.2 on $inter_vm_iface"
+        fi
+    else
+        say "WARNING: Could not find inter-VM interface with MAC $socket_mac"
+    fi
+
+    # Configure external network (user network with DHCP)
+    if [ -n "$ext_iface" ]; then
+        say "Configuring external interface $ext_iface with DHCP"
+        ip link set dev $ext_iface up
+        busybox udhcpc -i $ext_iface -p /run/udhcpc \
+            -s /usr/share/udhcpc/default.script -q -t 1 -n -f 2>/dev/null || true
+
+        # Fallback if DHCP fails
+        local ip_address=$(ip -4 addr show $ext_iface | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+        local default_route=$(ip route | grep default)
+        if [[ -z "$ip_address" ]]; then
+            ip addr add 10.0.2.15/24 dev $ext_iface
+        fi
+        if [[ -z "$default_route" ]]; then
+            ip route add default via 10.0.2.2
+        fi
+    fi
+
+    say setup cgroups
+    sysctl -q kernel.allow_bpf_attach_netcg=0 &>/dev/null || true
+    mount -t cgroup2 none /sys/fs/cgroup
+
+    say setup bpf
+    sysctl -q net.core.bpf_jit_enable=1
+    sysctl -q net.core.bpf_jit_kallsyms=1
+    sysctl -q net.core.bpf_jit_harden=0
+    mount -t bpf bpffs /sys/fs/bpf
+    ulimit -l unlimited &>/dev/null
+    ulimit -n 819200 &>/dev/null
+    ulimit -a &>/dev/null
+
+    say root passwd
+    rm -f /etc/{shadow,gshadow}
+    pwconv
+    grpconv
+
+    mount --bind / /mnt
+    usermod -R /mnt -d "$HOME" root
+    umount /mnt
+
+    if [ "$SSH" = "y" ]; then
+        say setup sshd
+        mask-dir () {
+            touch "$1"
+            setfattr -n trusted.overlay.opaque -v y /mnt/base-root/tmp/rootdir-overlay/upper/"$1"
+            mount -o remount /
+        }
+        mask-dir /etc/ssh/
+
+        cat << 'EOF' > /etc/pam.d/sshd
+account sufficient pam_permit.so
+auth sufficient pam_permit.so
+password sufficient pam_permit.so
+session sufficient pam_permit.so
+EOF
+
+        ssh-keygen -A
+        mkdir -p /run/sshd
+        `which sshd` -p 22 -o UsePAM=yes -o PermitRootLogin=yes -f /dev/null -E /var/log/sshd
+    fi
+
+    say root environment
+
+cat << EOF >> $HOME/.profile
+export KERNEL=$KERNEL
+export ROLE=$ROLE
+
+export PATH=\$HOME/local/bin:\$PATH
+export PATH=\$KERNEL/tools/bpf/bpftool:\$PATH
+export PATH=\$KERNEL/tools/perf:\$PATH
+EOF
+
+    cat << EOF >> $HOME/.bashrc
+mask-dir () {
+    touch "\$1"
+    setfattr -n trusted.overlay.opaque -v y /mnt/base-root/tmp/rootdir-overlay/upper/"\$1"
+    mount -o remount /
+}
+
+source $KERNEL/tools/bpf/bpftool/bash-completion/bpftool 2>/dev/null || true
+
+eval \$(resize)
+
+# Show role and network info on login
+echo "============================================"
+echo "  Role: $ROLE"
+if [ "$ROLE" = "vm1" ]; then
+    echo "  Inter-VM IP: 192.168.100.1"
+    echo "  Peer: 192.168.100.2 (vm2)"
+else
+    echo "  Inter-VM IP: 192.168.100.2"
+    echo "  Peer: 192.168.100.1 (vm1)"
+fi
+echo "============================================"
+EOF
+
+    cd linux-dev-env
+
+    if [ -n "$ARGS" ]; then
+        say non-interactive bash script
+        setsid bash -l -c "$ARGS"
+        if [ ! $? -eq 0 ]; then
+            say script failed, starting interactive console
+            setsid bash -l 0<>"/dev/ttyS0" 1>&0 2>&0
+        fi
+    else
+        say interactive bash
+        setsid bash -l 0<>"/dev/ttyS0" 1>&0 2>&0
+    fi
+
+    echo
+    say poweroff
+    poweroff -f
+    echo o > /proc/sysrq-trigger
+    sleep 30
+}
+
+# Default values
+GUEST=n
+MODULES=n
+SSH=n
+CMDLINE=""
+QEMUARG=""
+NRCPU=4
+MEMORY=2048
+ROLE=""
+SOCKET_PORT=12345
+SSH_PORT=52222
+NET_PORT=52223
+SERIAL_PORT=1235
+GDB_PORT=1234
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) usage ;;
+        -g) GUEST=y; shift ;;
+        -m) MODULES=y; shift ;;
+        -s) SSH=y; shift ;;
+        -k) KERNEL="$2"; shift 2 ;;
+        -c) CMDLINE="$2"; shift 2 ;;
+        -a) ARGS="$2"; shift 2 ;;
+        -H) export HOME="$2"; shift 2 ;;
+        -M) MEMORY="$2"; shift 2 ;;
+        -N) NRCPU="$2"; shift 2 ;;
+        -q) QEMUARG="$2"; shift 2 ;;
+        --role) ROLE="$2"; shift 2 ;;
+        --socket-port) SOCKET_PORT="$2"; shift 2 ;;
+        --ssh-port) SSH_PORT="$2"; shift 2 ;;
+        --net-port) NET_PORT="$2"; shift 2 ;;
+        --serial-port) SERIAL_PORT="$2"; shift 2 ;;
+        --gdb-port) GDB_PORT="$2"; shift 2 ;;
+        *) break ;;
+    esac
+done
+
+# Validate role
+if [ -z "$ROLE" ]; then
+    echo "Error: --role is required (vm1 or vm2)"
+    usage
+fi
+
+if [ "$ROLE" != "vm1" ] && [ "$ROLE" != "vm2" ]; then
+    echo "Error: --role must be 'vm1' or 'vm2'"
+    usage
+fi
+
+# Set default ports based on role (to avoid conflicts)
+if [ "$GUEST" != "y" ]; then
+    if [ "$ROLE" = "vm2" ]; then
+        # VM2 uses different ports to avoid conflict with VM1
+        [ "$SSH_PORT" = "52222" ] && SSH_PORT=52232
+        [ "$NET_PORT" = "52223" ] && NET_PORT=52233
+        [ "$SERIAL_PORT" = "1235" ] && SERIAL_PORT=1236
+        [ "$GDB_PORT" = "1234" ] && GDB_PORT=1244
+    fi
+fi
+
+[ "$GUEST" = "y" ] && guest "$@" || host "$@"
