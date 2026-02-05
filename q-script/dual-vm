@@ -211,7 +211,9 @@ guest() {
 
     # Find network interfaces by MAC address
     # Socket network MAC: 52:54:00:00:01:01 (VM1) or 52:54:00:00:01:02 (VM2)
-    local ifaces=($(ls /sys/class/net | grep -v lo))
+    # External network MAC: 52:54:00:12:34:56 (QEMU default)
+    # Only consider real ethernet interfaces (eth* or enp*), not virtual ones
+    local ifaces=($(ls /sys/class/net | grep -E '^(eth|enp)'))
     say "Found interfaces: ${ifaces[*]}"
 
     local inter_vm_iface=""
@@ -223,13 +225,14 @@ guest() {
     else
         local socket_mac="52:54:00:00:01:02"
     fi
+    local ext_mac="52:54:00:12:34:56"
 
     for iface in "${ifaces[@]}"; do
         local mac=$(cat /sys/class/net/$iface/address 2>/dev/null)
         say "Interface $iface has MAC $mac"
         if [ "$mac" = "$socket_mac" ]; then
             inter_vm_iface="$iface"
-        else
+        elif [ "$mac" = "$ext_mac" ]; then
             ext_iface="$iface"
         fi
     done
@@ -428,3 +431,4 @@ if [ "$GUEST" != "y" ]; then
 fi
 
 [ "$GUEST" = "y" ] && guest "$@" || host "$@"
+
