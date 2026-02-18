@@ -1,2 +1,0 @@
-name,count,files,locations
-bpf_sock_destroy,5,bpf/bpf_sock_term.c,"bpf/bpf_sock_term.c:39,bpf/bpf_sock_term.c:82,bpf/bpf_sock_term.c:102,bpf/bpf_sock_term.c:122,bpf/bpf_sock_term.c:142"

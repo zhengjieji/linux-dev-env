@@ -1,12 +1,13 @@
 BASE_PROJ ?= $(shell pwd)
 LINUX ?= ${BASE_PROJ}/linux
-RUNTIME_IMAGE ?= runtime-dev-zj
-SSH_PORT ?= "52222"
-NET_PORT ?= "52223"
-GDB_PORT ?= "1234"
+RUNTIME_IMAGE ?= single-vm-zhengjie
+SSH_PORT ?= "51022"
+NET_PORT ?= "51023"
+GDB_PORT ?= "1210"
+KTRACK ?= ${BASE_PROJ}/tools/kernel-track/ktrack.sh
 .ALWAYS:
 
-all: vmlinux 
+all: vmlinux
 
 docker: .ALWAYS
 	docker buildx build --network=host --progress=plain -t $(RUNTIME_IMAGE) .
@@ -26,17 +27,21 @@ qemu-run:
 qemu-ssh:
 	ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -t root@127.0.0.1 -p ${SSH_PORT}
 
-vmlinux: 
+vmlinux:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} auto-checkpoint --label vmlinux
 	docker run --rm -v ${LINUX}:/linux -w /linux $(RUNTIME_IMAGE) make -j`nproc` bzImage 
 
-headers-install: 
+headers-install:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} auto-checkpoint --label headers-install
 	docker run --rm -v ${LINUX}:/linux -w /linux $(RUNTIME_IMAGE) make -j`nproc` headers_install 
 
-modules-install: 
+modules-install:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} auto-checkpoint --label modules-install
 	docker run --rm -v ${LINUX}:/linux -w /linux $(RUNTIME_IMAGE) make -j`nproc` modules
 	docker run --rm -v ${LINUX}:/linux -w /linux $(RUNTIME_IMAGE) make -j`nproc` modules_install
 
 kernel:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} auto-checkpoint --label kernel
 	docker run --rm -v ${LINUX}:/linux -w /linux $(RUNTIME_IMAGE) make -j`nproc` 
 
 linux-clean:
@@ -57,70 +62,20 @@ bpftool:
 bpftool-clean:
 	docker run --rm -v ${LINUX}:/linux -w /linux/tools/bpf/bpftool $(RUNTIME_IMAGE) make clean -j`nproc`
 
-# =============================================================================
-# BPF Kernel Patch - Track kernel file modifications across experiments
-# See tools/bpf-kernel-patch/README.md for documentation
-# =============================================================================
+ktrack-status:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} status
 
-PATCH_SCRIPT := ./tools/bpf-kernel-patch/patch.sh
+ktrack-list:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} list
 
-patch-new:
-	@$(PATCH_SCRIPT) new $(NAME)
+ktrack-checkpoint:
+	KTRACK_KERNEL_DIR=${LINUX} ${KTRACK} checkpoint --label manual
 
-patch-list:
-	@$(PATCH_SCRIPT) list
+test-ktrack:
+	./tools/kernel-track/tests/run.sh
 
-patch-delete:
-	@$(PATCH_SCRIPT) delete $(NAME)
+test-vm-dev:
+	./tests/vm-linux-dev/run.sh
 
-patch-activate:
-	@$(PATCH_SCRIPT) activate $(NAME)
-
-patch-track:
-ifdef FILES
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) track $(FILES)
-else ifdef FILE
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) track $(FILE)
-else
-	@echo "Usage: make patch-track FILE=<path> or FILES=\"<path1> <path2>\""
-	@exit 1
-endif
-
-patch-track-add:
-ifdef FILES
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) track-add $(FILES)
-else ifdef FILE
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) track-add $(FILE)
-else
-	@echo "Usage: make patch-track-add FILE=<path> or FILES=\"<path1> <path2>\""
-	@exit 1
-endif
-
-patch-untrack:
-ifdef FILES
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) untrack $(FILES)
-else ifdef FILE
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) untrack $(FILE)
-else
-	@echo "Usage: make patch-untrack FILE=<path> or FILES=\"<path1> <path2>\""
-	@exit 1
-endif
-
-patch-apply:
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) apply
-
-patch-revert:
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) revert
-
-patch-status:
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) status
-
-patch-diff:
-ifdef FILE
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) diff $(FILE)
-else
-	@LINUX=$(LINUX) $(PATCH_SCRIPT) diff
-endif
-
-.PHONY: patch-new patch-list patch-delete patch-activate patch-track patch-track-add \
-        patch-untrack patch-apply patch-revert patch-status patch-diff
+test:
+	./tests/run.sh

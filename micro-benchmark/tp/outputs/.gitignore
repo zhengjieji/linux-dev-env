@@ -1,7 +1,0 @@
-# Ignore all output files
-*.log
-*.txt
-.*.pid
-
-# But keep the directory
-!.gitignore
