@@ -38,7 +38,7 @@ host() {
 	local console
 	console+=" -display none"
 	console+=" -serial mon:stdio"
-	console+=" -serial tcp::1235,server,nowait"
+	console+=" -serial tcp::${SERIAL_TCP_PORT},server,nowait"
 
 	cmdline+=" earlyprintk=serial,ttyS0,115200"
 	cmdline+=" console=ttyS0,115200"
@@ -46,12 +46,12 @@ host() {
 
 	local net
 	if [ "$SSH" = "y" ]; then
-    # check container env assume docker
-    if [ -f /.dockerenv ]; then
-		  net+=" -netdev user,id=virtual,hostfwd=tcp::52222-:22,hostfwd=tcp::52223-:52223"
-    else
-		  net+=" -netdev user,id=virtual,hostfwd=tcp:127.0.0.1:52222-:22"
-    fi
+		# check container env assume docker
+		if [ -f /.dockerenv ]; then
+			net+=" -netdev user,id=virtual,hostfwd=tcp::${SSH_FWD_PORT}-:22,hostfwd=tcp::${NET_FWD_PORT}-:52223"
+		else
+			net+=" -netdev user,id=virtual,hostfwd=tcp:127.0.0.1:${SSH_FWD_PORT}-:22,hostfwd=tcp:127.0.0.1:${NET_FWD_PORT}-:52223"
+		fi
 	else
 		net+=" -netdev user,id=virtual"
 	fi
@@ -60,6 +60,10 @@ host() {
 	local opts
 	[ "$MODULES" = "y" ] && opts+=" -m"
 	[ "$SSH" = "y" ] && opts+=" -s"
+	local gdbarg=""
+	if [ -n "${GDB_PORT}" ] && [ "${GDB_PORT}" != "off" ]; then
+		gdbarg+=" -gdb tcp::${GDB_PORT}"
+	fi
 
 	cmdline+=" rootfstype=9p"
 	cmdline+=" rootflags=version=9p2000.L,trans=virtio,msize=104857600,access=any"
@@ -81,8 +85,9 @@ host() {
 		$console \
 		$net \
 		$QEMUARG \
+		$gdbarg \
 		-kernel "$kernel" \
-		-append "$cmdline" -s
+		-append "$cmdline"
 
 }
 
@@ -286,6 +291,10 @@ QEMUARG=""
 
 NRCPU=4
 MEMORY=2048
+SSH_FWD_PORT="${Q_SSH_FWD_PORT:-52222}"
+NET_FWD_PORT="${Q_NET_FWD_PORT:-52223}"
+SERIAL_TCP_PORT="${Q_SERIAL_TCP_PORT:-1235}"
+GDB_PORT="${Q_GDB_PORT:-1234}"
 
 while getopts "hgmsk:c:a:H:N:M:q:" opt; do
 	case $opt in

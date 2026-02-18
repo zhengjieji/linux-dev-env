@@ -189,7 +189,8 @@ main() {
 	fi
 
 	log "setup complete"
-	log "next step: make -C ${ROOT_DIR} qemu-run"
+	log "next step (single VM): make -C ${ROOT_DIR} qemu-run"
+	log "next step (dual VM): make -C ${ROOT_DIR} dual-vm1 && make -C ${ROOT_DIR} dual-vm2"
 }
 
 main "$@"

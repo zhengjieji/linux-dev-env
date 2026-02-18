@@ -6,8 +6,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 REMOTE="origin"
-BRANCH="single-vm"
-COMMIT_MESSAGE="chore: update single-vm"
+BRANCH="dual-vm"
+COMMIT_MESSAGE="chore: update dual-vm"
 FORCE_WITH_LEASE=0
 
 log() {
@@ -35,7 +35,7 @@ Options:
 
 Example:
   $(basename "$0")
-  $(basename "$0") --branch single-vm --message "sync repo"
+  $(basename "$0") --branch dual-vm --message "sync repo"
 EOF
 }
 

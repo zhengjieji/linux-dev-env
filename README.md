@@ -63,7 +63,7 @@ It does:
 ./scripts/switch-kernel.sh --tag v6.18 --force-save
 ```
 
-#### Push Repo to GitHub Branch `single-vm` (Exclude `linux/`)
+#### Push Repo to GitHub Branch `dual-vm` (Exclude `linux/`)
 
 ```sh
 ./scripts/push-github.sh
@@ -72,8 +72,8 @@ It does:
 This script:
 - ensures `linux/` is ignored and never staged
 - commits local changes (if any)
-- pushes `HEAD` to `origin/single-vm`
-- creates local branch `single-vm` if missing
+- pushes `HEAD` to `origin/dual-vm`
+- creates local branch `dual-vm` if missing
 
 When you run kernel build targets (`vmlinux`, `kernel`, `headers-install`, `modules-install`),
 the pipeline now auto-creates a checkpoint if tracked files in `linux/` changed.
@@ -87,6 +87,31 @@ make qemu-run
 ```sh
 make qemu-ssh
 ```
+
+#### Run Dual VMs (vm1 + vm2)
+
+Start both VMs in separate terminals:
+
+```sh
+make dual-vm1
+make dual-vm2
+```
+
+Inspect, SSH, and stop:
+
+```sh
+make dual-vm-status
+make dual-vm1-ssh
+make dual-vm2-ssh
+make dual-vm-stop
+```
+
+Dual VM details:
+- vm1 SSH: `127.0.0.1:51122`
+- vm2 SSH: `127.0.0.1:51222`
+- vm1 data-plane IP: `192.168.100.1/24`
+- vm2 data-plane IP: `192.168.100.2/24`
+- vm1 and vm2 share a bridge in the session container for direct L2 connectivity
 
 #### If you want to enter the docker container where QEMU is running
 ```sh
@@ -135,6 +160,23 @@ KTRACK_KERNEL_DIR=$PWD/linux tools/kernel-track/ktrack.sh clean-build --last
 
 # apply build artifact cleanup
 KTRACK_KERNEL_DIR=$PWD/linux tools/kernel-track/ktrack.sh clean-build --last --apply
+```
+
+## Dual VM Testing
+
+Dry-run checks:
+
+```sh
+./tests/vm-linux-dev/run.sh
+```
+
+Live dual-vm integration (ssh + ping + xdp smoke):
+
+```sh
+./tests/vm-linux-dev/dual-vm-live.sh
+
+# or through unified live runner
+./tests/vm-linux-dev/run-live.sh --dual-vm
 ```
 
 
