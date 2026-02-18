@@ -107,8 +107,8 @@ make dual-vm-stop
 ```
 
 Dual VM details:
-- vm1 SSH: `127.0.0.1:51122`
-- vm2 SSH: `127.0.0.1:51222`
+- vm1 SSH: `127.0.0.1:53022`
+- vm2 SSH: `127.0.0.1:53122`
 - vm1 data-plane IP: `192.168.100.1/24`
 - vm2 data-plane IP: `192.168.100.2/24`
 - vm1 and vm2 share a bridge in the session container for direct L2 connectivity

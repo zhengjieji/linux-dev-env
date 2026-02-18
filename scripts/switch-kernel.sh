@@ -8,7 +8,7 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 LINUX_DIR="${ROOT_DIR}/linux"
 LINUX_REPO_URL="https://github.com/torvalds/linux.git"
 CONFIGS_ROOT="${ROOT_DIR}/linux-configs"
-RUNTIME_IMAGE="${RUNTIME_IMAGE:-single-vm-zhengjie}"
+RUNTIME_IMAGE="${RUNTIME_IMAGE:-dual-vm-zhengjie}"
 TARGET_TAG=""
 BASE_CONFIG=""
 
