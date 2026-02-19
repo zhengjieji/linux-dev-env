@@ -1,6 +1,6 @@
 BASE_PROJ ?= $(shell pwd)
 LINUX ?= ${BASE_PROJ}/linux
-RUNTIME_IMAGE ?= dual-vm-zhengjie
+RUNTIME_IMAGE ?= zhengjie-dual-vm
 SSH_PORT ?= "51022"
 NET_PORT ?= "51023"
 GDB_PORT ?= "1210"
