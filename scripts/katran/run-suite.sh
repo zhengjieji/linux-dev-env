@@ -192,13 +192,14 @@ stddev_of_values() {
 	rm -f "${values_file}"
 }
 
-write_medians_csv() {
+write_medians_csv_for_col() {
 	local out_csv="$1"
+	local value_col="$2"
 	{
 		echo "mode,rate_pps,samples,median_pps,stdev_pps"
 		for mode in ${MODES}; do
 			for rate in ${RATES}; do
-				values="$(awk -F, -v m="${mode}" -v r="${rate}" '$1==m && $2==r && $4=="ok" && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $5}' "${INDEX_CSV}" | sort -n)"
+				values="$(awk -F, -v m="${mode}" -v r="${rate}" -v c="${value_col}" 'NR>1 && $1==m && $2==r && $4=="ok" && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $c}' "${INDEX_CSV}" | sort -n)"
 				samples="$(printf '%s\n' "${values}" | sed '/^$/d' | wc -l | awk '{print $1}')"
 				if [ "${samples}" -gt 0 ]; then
 					median_pps="$(printf '%s\n' "${values}" | median_of_values)"
@@ -211,6 +212,24 @@ write_medians_csv() {
 			done
 		done
 	} >"${out_csv}"
+}
+
+source_stats_for_col() {
+	# Output: ok_cases,with_value,missing_value
+	local value_col="$1"
+	awk -F, -v c="${value_col}" '
+		NR>1 && $4=="ok" {
+			ok += 1
+			if ($c ~ /^[0-9]+([.][0-9]+)?$/) {
+				present += 1
+			} else {
+				missing += 1
+			}
+		}
+		END {
+			printf "%d,%d,%d\n", ok+0, present+0, missing+0
+		}
+	' "${INDEX_CSV}"
 }
 
 render_progress() {
@@ -284,10 +303,14 @@ SUITE_CASE_LOGS_DIR="${SUITE_DIR}/logs-cases"
 mkdir -p "${SUITE_DIR}" "${SUITE_RUNS_DIR}" "${SUITE_CASE_LOGS_DIR}"
 INDEX_CSV="${SUITE_DIR}/suite-index.csv"
 MEDIAN_CSV="${SUITE_DIR}/suite-medians.csv"
+MEDIAN_NNNPPS_CSV="${SUITE_DIR}/suite-medians-nnnpps.csv"
+MEDIAN_RESULT_CSV="${SUITE_DIR}/suite-medians-result.csv"
+VM1_RX_MEDIAN_CSV="${SUITE_DIR}/suite-medians-vm1-rx.csv"
+BACKEND_MEDIAN_CSV="${SUITE_DIR}/suite-medians-backend-delivered.csv"
 PLOT_SCRIPT="${SCRIPT_DIR}/plot-suite.sh"
 
 {
-	echo "mode,rate_pps,repeat,status,measured_pps,run_dir,log_file"
+	echo "mode,rate_pps,repeat,status,measured_pps,measured_pps_source,measured_pps_nnnpps,measured_pps_result,measurement_note,vm1_rx_pps,backend_delivered_pps,run_dir,log_file"
 } >"${INDEX_CSV}"
 
 SUITE_START_EPOCH="$(date +%s)"
@@ -308,6 +331,12 @@ for mode in ${MODES}; do
 			status="ok"
 			run_dir=""
 			measured_pps=""
+			measured_pps_source=""
+			measured_pps_nnnpps=""
+			measured_pps_result=""
+			measurement_note=""
+			vm1_rx_pps=""
+			backend_delivered_pps=""
 
 			render_progress "running" "${mode}" "${rate}" "${rep}"
 			run_args=(--mode "${mode}" --rate-pps "${rate}" --duration "${DURATION_SECS}" --label "${case_label}" --results-dir "${SUITE_RUNS_DIR}")
@@ -339,9 +368,15 @@ for mode in ${MODES}; do
 			run_dir="$(awk -F= '/^RUN_DIR=/{print $2}' "${case_log}" | tail -n1)"
 			if [ -n "${run_dir}" ] && [ -f "${run_dir}/summary.csv" ]; then
 				measured_pps="$(awk -F, 'NR==2{print $5}' "${run_dir}/summary.csv")"
+				measured_pps_source="$(awk -F, 'NR==2{print $6}' "${run_dir}/summary.csv")"
+				measured_pps_nnnpps="$(awk -F, 'NR==2{print $7}' "${run_dir}/summary.csv")"
+				measured_pps_result="$(awk -F, 'NR==2{print $8}' "${run_dir}/summary.csv")"
+				measurement_note="$(awk -F, 'NR==2{print $11}' "${run_dir}/summary.csv")"
+				vm1_rx_pps="$(awk -F, 'NR==2{print $16}' "${run_dir}/summary.csv")"
+				backend_delivered_pps="$(awk -F, 'NR==2{print $19}' "${run_dir}/summary.csv")"
 			fi
 
-			echo "${mode},${rate},${rep},${status},${measured_pps},${run_dir},${case_log}" >>"${INDEX_CSV}"
+			echo "${mode},${rate},${rep},${status},${measured_pps},${measured_pps_source},${measured_pps_nnnpps},${measured_pps_result},${measurement_note},${vm1_rx_pps},${backend_delivered_pps},${run_dir},${case_log}" >>"${INDEX_CSV}"
 			completed_cases=$((completed_cases + 1))
 			if [ "${status}" = "ok" ]; then
 				ok_cases=$((ok_cases + 1))
@@ -371,11 +406,26 @@ done
 if [ "${INTERACTIVE_PROGRESS}" -eq 1 ]; then
 	printf "\n" >&${PROGRESS_FD}
 fi
-write_medians_csv "${MEDIAN_CSV}"
+
+# Effective value keeps backward compatibility; source-specific medians avoid mixing.
+write_medians_csv_for_col "${MEDIAN_CSV}" 5
+write_medians_csv_for_col "${MEDIAN_NNNPPS_CSV}" 7
+write_medians_csv_for_col "${MEDIAN_RESULT_CSV}" 8
+write_medians_csv_for_col "${VM1_RX_MEDIAN_CSV}" 10
+write_medians_csv_for_col "${BACKEND_MEDIAN_CSV}" 11
 
 if [ "${NO_PLOT}" -eq 0 ] && [ -x "${PLOT_SCRIPT}" ]; then
 	"${PLOT_SCRIPT}" --suite-dir "${SUITE_DIR}" >/dev/null 2>&1 || true
 fi
+
+stats_nnnpps="$(source_stats_for_col 7)"
+stats_result="$(source_stats_for_col 8)"
+stats_vm1_rx="$(source_stats_for_col 10)"
+stats_backend="$(source_stats_for_col 11)"
+IFS=, read -r nnn_ok nnn_present nnn_missing <<<"${stats_nnnpps}"
+IFS=, read -r res_ok res_present res_missing <<<"${stats_result}"
+IFS=, read -r vm1_ok vm1_present vm1_missing <<<"${stats_vm1_rx}"
+IFS=, read -r be_ok be_present be_missing <<<"${stats_backend}"
 
 {
 	echo "# Suite Summary"
@@ -387,14 +437,46 @@ fi
 	echo "- failed_cases: ${failed_cases}"
 	echo "- index_csv: ${INDEX_CSV}"
 	echo "- medians_csv: ${MEDIAN_CSV}"
+	echo "- medians_nnnpps_csv: ${MEDIAN_NNNPPS_CSV}"
+	echo "- medians_result_csv: ${MEDIAN_RESULT_CSV}"
+	echo "- vm1_rx_medians_csv: ${VM1_RX_MEDIAN_CSV}"
+	echo "- backend_delivered_medians_csv: ${BACKEND_MEDIAN_CSV}"
+	echo "- nnnpps_present_on_ok_cases: ${nnn_present}/${nnn_ok} (missing=${nnn_missing})"
+	echo "- result_present_on_ok_cases: ${res_present}/${res_ok} (missing=${res_missing})"
+	echo "- vm1_rx_present_on_ok_cases: ${vm1_present}/${vm1_ok} (missing=${vm1_missing})"
+	echo "- backend_delivered_present_on_ok_cases: ${be_present}/${be_ok} (missing=${be_missing})"
 	echo "- plots_dir: ${SUITE_DIR}/plots"
 	echo "- runs_dir: ${SUITE_RUNS_DIR}"
 	echo "- case_logs_dir: ${SUITE_CASE_LOGS_DIR}"
 	echo
-	echo "## Median Throughput"
+	echo "## Median Throughput (Effective: prefer NNNpps then fallback Result)"
 	echo
 	echo '```csv'
 	cat "${MEDIAN_CSV}"
+	echo '```'
+	echo
+	echo "## Median Throughput (NNNpps Only, No Fallback)"
+	echo
+	echo '```csv'
+	cat "${MEDIAN_NNNPPS_CSV}"
+	echo '```'
+	echo
+	echo "## Median Throughput (Result packets/usec Only, No Fallback)"
+	echo
+	echo '```csv'
+	cat "${MEDIAN_RESULT_CSV}"
+	echo '```'
+	echo
+	echo "## Median VM1 RX PPS"
+	echo
+	echo '```csv'
+	cat "${VM1_RX_MEDIAN_CSV}"
+	echo '```'
+	echo
+	echo "## Median Backend Delivered PPS"
+	echo
+	echo '```csv'
+	cat "${BACKEND_MEDIAN_CSV}"
 	echo '```'
 } >"${SUITE_DIR}/suite-summary.md"
 

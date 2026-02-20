@@ -7,7 +7,7 @@ EXP2_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "${EXP2_DIR}/common.sh"
 
 RUN_LATENCY=1
-RUN_DISCOVERY=1
+RUN_DISCOVERY=0
 NO_VM_START=0
 NO_VM_SETUP=0
 KEEP_VMS_UP=0
@@ -36,14 +36,18 @@ usage() {
 	cat <<USAGE
 Usage: $(basename "$0") [options]
 
-Run full Exp2 pipeline:
-  precheck -> vm setup -> prepare source -> oracle build -> smoke -> discovery -> throughput -> latency -> analyze
+Run Exp2 measurement pipeline (default):
+  precheck -> vm setup -> prepare source -> oracle build -> smoke -> throughput -> latency -> analyze
+
+Discovery is separated by default. Use make exp2-run-discovery when refreshing invariant maps.
+Optional legacy behavior: pass --with-discovery to include discovery in this pipeline.
 
 Options:
   --patch <path>                 Optional oracle patch to apply in Exp2 source
   --runtime-image <name>         Runtime image for build (default: ${RUNTIME_IMAGE})
   --skip-latency                 Skip latency sub-run
-  --skip-discovery               Skip discovery run
+  --with-discovery               Include discovery stage in this run (default: off)
+  --skip-discovery               Force disable discovery stage
   --no-vm-start                  Assume VMs are already running
   --no-vm-setup                  Skip explicit vm setup call (not recommended)
   --keep-vms-up                  Do not stop dual VMs when run finishes
@@ -63,7 +67,7 @@ Options:
   --lat-ping-interval <sec>      Pass-through to run-latency --ping-interval
   --lat-progress-interval <n>    Pass-through to run-latency --progress-interval
 
-  Discovery overrides:
+  Discovery overrides (only used with --with-discovery):
   --discovery-rate <n>           Pass-through to discovery --rate-pps
   --discovery-duration <sec>     Pass-through to discovery --duration
   --discovery-interval <sec>     Pass-through to discovery --interval
@@ -87,6 +91,10 @@ while [ $# -gt 0 ]; do
 			;;
 		--skip-latency)
 			RUN_LATENCY=0
+			shift
+			;;
+		--with-discovery)
+			RUN_DISCOVERY=1
 			shift
 			;;
 		--skip-discovery)
@@ -194,6 +202,15 @@ if [ -n "${TP_RATES}" ] && [ -z "${LAT_RATES}" ]; then
 	LAT_RATES="${TP_RATES}"
 fi
 
+if [ "${RUN_DISCOVERY}" -eq 0 ] && {
+	[ -n "${DISCOVERY_RATE}" ] ||
+	[ -n "${DISCOVERY_DURATION}" ] ||
+	[ -n "${DISCOVERY_INTERVAL}" ] ||
+	[ -n "${DISCOVERY_MAX_DUMP_LINES}" ];
+}; then
+	exp2_log "discovery overrides were provided but discovery is disabled; use --with-discovery to enable"
+fi
+
 STARTED_VMS_BY_SCRIPT=0
 
 cleanup_dual_vms() {
@@ -242,6 +259,8 @@ if [ "${RUN_DISCOVERY}" -eq 1 ]; then
 	[ -n "${DISCOVERY_INTERVAL}" ] && discovery_args+=(--interval "${DISCOVERY_INTERVAL}")
 	[ -n "${DISCOVERY_MAX_DUMP_LINES}" ] && discovery_args+=(--max-dump-lines "${DISCOVERY_MAX_DUMP_LINES}")
 	"${EXP2_DIR}/discovery.sh" "${discovery_args[@]}"
+else
+	exp2_log "discovery stage skipped (default measurement pipeline)"
 fi
 
 throughput_args=(--oracle-obj "${oracle_obj}")
@@ -269,4 +288,4 @@ fi
 
 "${EXP2_DIR}/analyze.sh"
 
-exp2_log "Exp2 pipeline complete"
+exp2_log "Exp2 measurement pipeline complete"

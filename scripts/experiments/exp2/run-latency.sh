@@ -32,6 +32,7 @@ Run Exp2 latency sub-run under load.
 
 Method:
   For each (mode,rate,repeat), run pktgen load and collect ICMP RTT samples to VIP in parallel.
+  Latency metric is peak RTT (peak_ms). Time-series RTT is also saved per case.
   This is an under-load RTT proxy, not a direct per-packet LB service latency trace.
 
 Options:
@@ -247,7 +248,7 @@ RUN_ID="$(new_exp2_id "${LABEL}")"
 RUN_DIR="${OUT_ROOT}/${RUN_ID}"
 mkdir -p "${RUN_DIR}/cases"
 INDEX_CSV="${RUN_DIR}/latency-index.csv"
-echo "mode,rate_pps,repeat,status,avg_ms,p99_ms,p999_ms,packet_loss_pct,run_dir" >"${INDEX_CSV}"
+echo "mode,rate_pps,repeat,status,peak_ms,packet_loss_pct,run_dir" >"${INDEX_CSV}"
 
 if [ "${DRY_RUN}" -eq 1 ]; then
 	exp2_log "[dry-run] would run latency suite into ${RUN_DIR}"
@@ -260,19 +261,6 @@ maybe_start_dual_vms "${NO_VM_START}"
 if [ "${NO_VM_SETUP}" -eq 0 ]; then
 	"${EXP2_DIR}/vm-setup.sh" --out-root "${RUN_DIR}/setup" --no-vm-start >"${RUN_DIR}/vm-setup.log" 2>&1
 fi
-
-compute_percentile() {
-	local values_file="$1"
-	local percentile="$2"
-	local n
-	n=$(wc -l <"${values_file}" | awk '{print $1}')
-	if [ "${n}" -eq 0 ]; then
-		echo ""
-		return 0
-	fi
-	idx=$(awk -v n="${n}" -v p="${percentile}" 'BEGIN {v=int((p*n)+0.999999); if (v<1) v=1; if (v>n) v=n; print v}')
-	sed -n "${idx}p" "${values_file}"
-}
 
 extract_rtt_values() {
 	local ping_file="$1"
@@ -291,6 +279,49 @@ extract_rtt_values() {
 	' "${ping_file}" 2>/dev/null | sort -n >"${out_file}" || true
 }
 
+extract_rtt_series() {
+	local ping_file="$1"
+	local out_file="$2"
+	# Output: elapsed_sec,rtt_ms (time order).
+	# Preferred: ping -D timestamp. Fallback: icmp_seq * ping interval.
+	awk -v interval="${PING_INTERVAL_SECS}" '
+		BEGIN {
+			start = -1
+			print "elapsed_sec,rtt_ms"
+		}
+		{
+			ts = ""
+			seq = ""
+			rtt = ""
+			if ($1 ~ /^\[[0-9]+\.[0-9]+\]$/) {
+				ts = $1
+				sub(/^\[/, "", ts)
+				sub(/\]$/, "", ts)
+			}
+			for (i = 1; i <= NF; i++) {
+				if ($i ~ /^icmp_seq=[0-9]+$/) {
+					seq = $i
+					sub(/^icmp_seq=/, "", seq)
+				}
+				if ($i ~ /^time=[0-9.]+$/) {
+					rtt = $i
+					sub(/^time=/, "", rtt)
+				}
+			}
+			if (rtt != "") {
+				if (ts != "") {
+					ts_num = ts + 0
+					if (start < 0) {
+						start = ts_num
+					}
+					printf "%.6f,%.3f\n", ts_num - start, rtt + 0
+				} else if (seq != "") {
+					printf "%.6f,%.3f\n", (seq - 1) * interval, rtt + 0
+				}
+			}
+		}
+	' "${ping_file}" >"${out_file}" 2>/dev/null || true
+}
 MODE_COUNT="$(echo "${MODES}" | awk '{print NF}')"
 RATE_COUNT="$(echo "${RATES}" | awk '{print NF}')"
 TOTAL_CASES=$((MODE_COUNT * RATE_COUNT * REPEATS))
@@ -309,6 +340,8 @@ for mode in ${MODES}; do
 			case_dir="${RUN_DIR}/cases/${case_id}"
 			mkdir -p "${case_dir}"
 			status="ok"
+			peak_ms=""
+			packet_loss_pct=""
 
 			if [ "${INTERACTIVE_PROGRESS}" -eq 1 ]; then
 				render_progress "running" "${mode}" "${rate}" "${rep}"
@@ -339,7 +372,7 @@ for mode in ${MODES}; do
 				REMOTE_PING_OUT="/tmp/exp2-lat-ping-${RUN_ID}-${case_id}.txt"
 
 				(
-					ssh_vm vm2 "( /linux-dev-env/scripts/katran/vm2-run-workload.sh --vip ${VIP} --dport ${VIP_PORT} --rate-pps ${rate} --duration ${DURATION_SECS} --output ${REMOTE_WORKLOAD_OUT} >/tmp/exp2-lat-workload-bg-${RUN_ID}-${case_id}.log 2>&1 ) & ping -n -i ${PING_INTERVAL_SECS} -w ${DURATION_SECS} ${VIP} > ${REMOTE_PING_OUT} 2>&1; wait" >"${case_dir}/run.log" 2>&1
+					ssh_vm vm2 "( /linux-dev-env/scripts/katran/vm2-run-workload.sh --vip ${VIP} --dport ${VIP_PORT} --rate-pps ${rate} --duration ${DURATION_SECS} --output ${REMOTE_WORKLOAD_OUT} >/tmp/exp2-lat-workload-bg-${RUN_ID}-${case_id}.log 2>&1 ) & ping -D -n -i ${PING_INTERVAL_SECS} -w ${DURATION_SECS} ${VIP} > ${REMOTE_PING_OUT} 2>&1; wait" >"${case_dir}/run.log" 2>&1
 				) &
 				run_pid=$!
 				if ! wait_case_pid "${run_pid}" "${mode}" "${rate}" "${rep}"; then
@@ -349,25 +382,17 @@ for mode in ${MODES}; do
 				if [ "${status}" = "ok" ]; then
 					ssh_vm vm2 "cat ${REMOTE_PING_OUT}" >"${case_dir}/ping.txt" 2>/dev/null || true
 					ssh_vm vm2 "cat ${REMOTE_WORKLOAD_OUT}" >"${case_dir}/workload.txt" 2>/dev/null || true
+					extract_rtt_series "${case_dir}/ping.txt" "${case_dir}/rtt-time-series.csv"
 					extract_rtt_values "${case_dir}/ping.txt" "${case_dir}/rtt-ms.values"
-					avg_ms="$(awk '{sum+=$1;n++} END{if(n>0) printf "%.3f", sum/n}' "${case_dir}/rtt-ms.values")"
-					p99_ms="$(compute_percentile "${case_dir}/rtt-ms.values" 0.99)"
-					p999_ms="$(compute_percentile "${case_dir}/rtt-ms.values" 0.999)"
+					peak_ms="$(awk -F, 'NR>1 && $2 ~ /^[0-9]+([.][0-9]+)?$/ {if ($2+0 > max) max=$2+0; seen=1} END {if (seen) printf "%.3f", max}' "${case_dir}/rtt-time-series.csv")"
+					if [ -z "${peak_ms}" ]; then
+						peak_ms="$(awk 'NR==1 {max=$1+0; seen=1} NR>1 && ($1+0)>max {max=$1+0; seen=1} END {if (seen) printf "%.3f", max}' "${case_dir}/rtt-ms.values")"
+					fi
 					packet_loss_pct="$(sed -n 's/.*, \([0-9]\+\)% packet loss.*/\1/p' "${case_dir}/ping.txt" | tail -n1)"
-				else
-					avg_ms=""
-					p99_ms=""
-					p999_ms=""
-					packet_loss_pct=""
 				fi
-			else
-				avg_ms=""
-				p99_ms=""
-				p999_ms=""
-				packet_loss_pct=""
 			fi
 
-			echo "${mode},${rate},${rep},${status},${avg_ms},${p99_ms},${p999_ms},${packet_loss_pct},${case_dir}" >>"${INDEX_CSV}"
+			echo "${mode},${rate},${rep},${status},${peak_ms},${packet_loss_pct},${case_dir}" >>"${INDEX_CSV}"
 			completed_cases=$((completed_cases + 1))
 			if [ "${status}" = "ok" ]; then
 				ok_cases=$((ok_cases + 1))

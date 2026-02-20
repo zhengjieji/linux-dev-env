@@ -74,6 +74,7 @@ EXP2_DISCOVERY_DURATION_SECS ?= 120
 EXP2_DISCOVERY_INTERVAL_SECS ?= 30
 EXP2_DISCOVERY_MAX_DUMP_LINES ?= 2000
 EXP2_RUN_ALL_EXTRA_ARGS ?=
+EXP2_RUN_DISCOVERY_EXTRA_ARGS ?=
 
 .ALWAYS:
 
@@ -263,10 +264,16 @@ exp2-plot:
 
 exp2-run-all:
 	@if [ -n "${EXP2_ORACLE_PATCH}" ]; then \
-		RUNTIME_IMAGE=${RUNTIME_IMAGE} ${EXP2_SCRIPT_DIR}/run-all.sh --runtime-image ${RUNTIME_IMAGE} --patch ${EXP2_ORACLE_PATCH} --tp-rates "${EXP2_RATES}" --tp-repeats ${EXP2_REPEATS} --tp-duration ${EXP2_DURATION_SECS} --tp-progress-interval ${EXP2_PROGRESS_INTERVAL} --lat-rates "${EXP2_LAT_RATES}" --lat-repeats ${EXP2_LAT_REPEATS} --lat-duration ${EXP2_LAT_DURATION_SECS} --lat-ping-interval ${EXP2_LAT_PING_INTERVAL} --lat-progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} --discovery-rate ${EXP2_DISCOVERY_RATE_PPS} --discovery-duration ${EXP2_DISCOVERY_DURATION_SECS} --discovery-interval ${EXP2_DISCOVERY_INTERVAL_SECS} --discovery-max-dump-lines ${EXP2_DISCOVERY_MAX_DUMP_LINES} ${EXP2_RUN_ALL_EXTRA_ARGS}; \
+		RUNTIME_IMAGE=${RUNTIME_IMAGE} bash ${EXP2_SCRIPT_DIR}/run-all.sh --runtime-image ${RUNTIME_IMAGE} --patch ${EXP2_ORACLE_PATCH} --tp-rates "${EXP2_RATES}" --tp-repeats ${EXP2_REPEATS} --tp-duration ${EXP2_DURATION_SECS} --tp-progress-interval ${EXP2_PROGRESS_INTERVAL} --lat-rates "${EXP2_LAT_RATES}" --lat-repeats ${EXP2_LAT_REPEATS} --lat-duration ${EXP2_LAT_DURATION_SECS} --lat-ping-interval ${EXP2_LAT_PING_INTERVAL} --lat-progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} ${EXP2_RUN_ALL_EXTRA_ARGS}; \
 	else \
-		RUNTIME_IMAGE=${RUNTIME_IMAGE} ${EXP2_SCRIPT_DIR}/run-all.sh --runtime-image ${RUNTIME_IMAGE} --tp-rates "${EXP2_RATES}" --tp-repeats ${EXP2_REPEATS} --tp-duration ${EXP2_DURATION_SECS} --tp-progress-interval ${EXP2_PROGRESS_INTERVAL} --lat-rates "${EXP2_LAT_RATES}" --lat-repeats ${EXP2_LAT_REPEATS} --lat-duration ${EXP2_LAT_DURATION_SECS} --lat-ping-interval ${EXP2_LAT_PING_INTERVAL} --lat-progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} --discovery-rate ${EXP2_DISCOVERY_RATE_PPS} --discovery-duration ${EXP2_DISCOVERY_DURATION_SECS} --discovery-interval ${EXP2_DISCOVERY_INTERVAL_SECS} --discovery-max-dump-lines ${EXP2_DISCOVERY_MAX_DUMP_LINES} ${EXP2_RUN_ALL_EXTRA_ARGS}; \
+		RUNTIME_IMAGE=${RUNTIME_IMAGE} bash ${EXP2_SCRIPT_DIR}/run-all.sh --runtime-image ${RUNTIME_IMAGE} --tp-rates "${EXP2_RATES}" --tp-repeats ${EXP2_REPEATS} --tp-duration ${EXP2_DURATION_SECS} --tp-progress-interval ${EXP2_PROGRESS_INTERVAL} --lat-rates "${EXP2_LAT_RATES}" --lat-repeats ${EXP2_LAT_REPEATS} --lat-duration ${EXP2_LAT_DURATION_SECS} --lat-ping-interval ${EXP2_LAT_PING_INTERVAL} --lat-progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} ${EXP2_RUN_ALL_EXTRA_ARGS}; \
 	fi
+
+exp2-run-measurement: exp2-run-all
+
+exp2-run-discovery:
+	RUNTIME_IMAGE=${RUNTIME_IMAGE} bash ${EXP2_SCRIPT_DIR}/run-discovery-pipeline.sh --out-root ${EXP2_DISCOVERY_OUT_DIR} --rate-pps ${EXP2_DISCOVERY_RATE_PPS} --duration ${EXP2_DISCOVERY_DURATION_SECS} --interval ${EXP2_DISCOVERY_INTERVAL_SECS} --max-dump-lines ${EXP2_DISCOVERY_MAX_DUMP_LINES} ${EXP2_RUN_DISCOVERY_EXTRA_ARGS}
+
 exp3-auto-v0:
 	${EXP3_SCRIPT_DIR}/run-auto-v0.sh
 

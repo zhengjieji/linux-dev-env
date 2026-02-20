@@ -256,7 +256,7 @@ Legacy aliases are still available:
 
 ### Exp2 (implemented)
 
-Recommended flow:
+Recommended setup/build gates:
 
 ```sh
 make exp2-precheck
@@ -267,10 +267,25 @@ make exp2-bytecode-compare # optional manual compare
 make exp2-test-smoke
 ```
 
-Then run Exp2 measurements:
+Discovery is separate from measurement:
 
 ```sh
+make exp2-run-discovery
+# or raw discovery only:
 make exp2-discovery
+```
+
+Run measurement pipeline (throughput + latency + analysis, no discovery):
+Use `EXP2_RUN_ALL_EXTRA_ARGS="--with-discovery"` only if you intentionally want legacy one-shot behavior.
+
+```sh
+make exp2-run-all
+# same as: make exp2-run-measurement
+```
+
+Step-by-step measurement path:
+
+```sh
 make exp2-run-throughput
 make exp2-run-latency
 make exp2-analyze
@@ -281,12 +296,6 @@ Tune latency progress refresh if needed (default `1` second):
 
 ```sh
 make exp2-run-latency EXP2_LAT_PROGRESS_INTERVAL=1
-```
-
-Or run one-shot pipeline:
-
-```sh
-make exp2-run-all
 ```
 
 For plots only from latest analysis:

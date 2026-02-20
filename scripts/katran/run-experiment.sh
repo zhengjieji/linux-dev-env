@@ -253,6 +253,28 @@ fi
 
 log "run dir: ${RUN_DIR}"
 
+read_meta_value() {
+	# Args: file key
+	local f="$1"
+	local key="$2"
+	if [ -f "${f}" ]; then
+		sed -n "s/^${key}=//p" "${f}" | head -n1
+	fi
+}
+
+calc_pps_from_delta() {
+	# Args: before after duration
+	local before="$1"
+	local after="$2"
+	local duration="$3"
+	if printf '%s\n' "${before}" | grep -Eq '^[0-9]+$' &&
+		printf '%s\n' "${after}" | grep -Eq '^[0-9]+$' &&
+		printf '%s\n' "${duration}" | grep -Eq '^[0-9]+$' &&
+		[ "${duration}" -gt 0 ] && [ "${after}" -ge "${before}" ]; then
+		awk -v b="${before}" -v a="${after}" -v d="${duration}" 'BEGIN {printf "%.3f", (a - b) / d}'
+	fi
+}
+
 if [ "${NO_VM_START}" -eq 0 ]; then
 	log "ensuring dual VMs are running"
 	make -C "${ROOT_DIR}" dual-vm1 >"${RUN_DIR}/logs-host/dual-vm1.log" 2>&1
@@ -276,12 +298,27 @@ else
 	ssh_vm vm1 "${MODE_CMD}" >"${RUN_DIR}/logs-vm1/mode.log" 2>&1
 fi
 
-REMOTE_WORKLOAD_OUT="/tmp/katran-workload-${RUN_ID}.txt"
-REMOTE_VM1_COLLECT="/tmp/katran-vm1-${RUN_ID}.txt"
-REMOTE_VM2_COLLECT="/tmp/katran-vm2-${RUN_ID}.txt"
+REMOTE_VM1_SNAP_BEFORE="/tmp/katran-vm1-snapshot-before-${RUN_ID}.env"
+REMOTE_VM1_SNAP_AFTER="/tmp/katran-vm1-snapshot-after-${RUN_ID}.env"
+
+log "capturing VM1 counters before workload"
+ssh_vm vm1 "/linux-dev-env/scripts/katran/vm1-collect.sh --mode ${MODE} --snapshot-only --output ${REMOTE_VM1_SNAP_BEFORE}" >"${RUN_DIR}/logs-vm1/snapshot-before.log" 2>&1
+ssh_vm vm1 "cat ${REMOTE_VM1_SNAP_BEFORE}" >"${RUN_DIR}/metrics/vm1-snapshot-before.env"
 
 log "running workload on VM2"
 ssh_vm vm2 "/linux-dev-env/scripts/katran/vm2-run-workload.sh --vip ${VIP} --dport ${VIP_PORT} --rate-pps ${RATE_PPS} --duration ${DURATION_SECS} --dst-mac ${DST_MAC} --output ${REMOTE_WORKLOAD_OUT}" >"${RUN_DIR}/logs-vm2/workload.log" 2>&1
+
+log "capturing VM1 counters after workload"
+ssh_vm vm1 "/linux-dev-env/scripts/katran/vm1-collect.sh --mode ${MODE} --snapshot-only --output ${REMOTE_VM1_SNAP_AFTER}" >"${RUN_DIR}/logs-vm1/snapshot-after.log" 2>&1
+ssh_vm vm1 "cat ${REMOTE_VM1_SNAP_AFTER}" >"${RUN_DIR}/metrics/vm1-snapshot-after.env"
+
+VM1_DATA_IFACE="$(read_meta_value "${RUN_DIR}/metrics/vm1-snapshot-after.env" data_iface)"
+VM1_RX_BEFORE="$(read_meta_value "${RUN_DIR}/metrics/vm1-snapshot-before.env" vm1_rx_packets)"
+VM1_RX_AFTER="$(read_meta_value "${RUN_DIR}/metrics/vm1-snapshot-after.env" vm1_rx_packets)"
+BACKEND_RX_BEFORE="$(read_meta_value "${RUN_DIR}/metrics/vm1-snapshot-before.env" backend_rx_packets)"
+BACKEND_RX_AFTER="$(read_meta_value "${RUN_DIR}/metrics/vm1-snapshot-after.env" backend_rx_packets)"
+VM1_RX_PPS="$(calc_pps_from_delta "${VM1_RX_BEFORE}" "${VM1_RX_AFTER}" "${DURATION_SECS}")"
+BACKEND_DELIVERED_PPS="$(calc_pps_from_delta "${BACKEND_RX_BEFORE}" "${BACKEND_RX_AFTER}" "${DURATION_SECS}")"
 
 log "collecting metrics"
 ssh_vm vm1 "/linux-dev-env/scripts/katran/vm1-collect.sh --mode ${MODE} --output ${REMOTE_VM1_COLLECT}" >"${RUN_DIR}/logs-vm1/collect.log" 2>&1
@@ -293,19 +330,40 @@ ssh_vm vm2 "cat ${REMOTE_WORKLOAD_OUT}" >"${RUN_DIR}/metrics/vm2-workload.txt"
 
 RESULT_LINE="$(grep -m1 '^Result:' "${RUN_DIR}/metrics/vm2-workload.txt" || true)"
 PPS_LINE="$(grep -m1 '^[[:space:]]*[0-9][0-9]*pps[[:space:]]' "${RUN_DIR}/metrics/vm2-workload.txt" || true)"
-MEASURED_PPS="$(echo "${PPS_LINE}" | sed -n 's/^[[:space:]]*\([0-9][0-9]*\)pps.*/\1/p')"
+MEASURED_PPS_NNNPPS="$(echo "${PPS_LINE}" | sed -n 's/^[[:space:]]*\([0-9][0-9]*\)pps.*/\1/p')"
 
-if [ -z "${MEASURED_PPS}" ]; then
-	RESULT_USEC="$(echo "${RESULT_LINE}" | sed -n 's/.*OK: \([0-9][0-9]*\)(.*/\1/p')"
-	RESULT_PKTS="$(echo "${RESULT_LINE}" | sed -n 's/.* usec, \([0-9][0-9]*\) (.*/\1/p')"
-	if [ -n "${RESULT_USEC}" ] && [ -n "${RESULT_PKTS}" ] && [ "${RESULT_USEC}" -gt 0 ]; then
-		MEASURED_PPS="$(awk -v pkts="${RESULT_PKTS}" -v usec="${RESULT_USEC}" 'BEGIN {printf "%.0f", (pkts * 1000000) / usec}')"
+RESULT_USEC="$(echo "${RESULT_LINE}" | sed -n 's/.*OK: \([0-9][0-9]*\)(.*/\1/p')"
+RESULT_PKTS="$(echo "${RESULT_LINE}" | sed -n 's/.* usec, \([0-9][0-9]*\) (.*/\1/p')"
+MEASURED_PPS_RESULT=""
+if [ -n "${RESULT_USEC}" ] && [ -n "${RESULT_PKTS}" ] && [ "${RESULT_USEC}" -gt 0 ]; then
+	MEASURED_PPS_RESULT="$(awk -v pkts="${RESULT_PKTS}" -v usec="${RESULT_USEC}" 'BEGIN {printf "%.0f", (pkts * 1000000) / usec}')"
+fi
+
+# Backward-compatible effective value: prefer explicit NNNpps, fallback to packets/usec.
+MEASURED_PPS=""
+MEASURED_PPS_SOURCE="missing"
+MEASUREMENT_NOTE="missing_nnnpps_and_result"
+if [ -n "${MEASURED_PPS_NNNPPS}" ]; then
+	MEASURED_PPS="${MEASURED_PPS_NNNPPS}"
+	MEASURED_PPS_SOURCE="nnnpps"
+	if [ -n "${MEASURED_PPS_RESULT}" ]; then
+		if [ "${MEASURED_PPS_RESULT}" = "${MEASURED_PPS_NNNPPS}" ]; then
+			MEASUREMENT_NOTE="both_present_match"
+		else
+			MEASUREMENT_NOTE="both_present_diff"
+		fi
+	else
+		MEASUREMENT_NOTE="nnnpps_only"
 	fi
+elif [ -n "${MEASURED_PPS_RESULT}" ]; then
+	MEASURED_PPS="${MEASURED_PPS_RESULT}"
+	MEASURED_PPS_SOURCE="result"
+	MEASUREMENT_NOTE="fallback_result"
 fi
 
 {
-	echo "run_id,mode,rate_pps,duration_secs,measured_pps,result_line"
-	echo "${RUN_ID},${MODE},${RATE_PPS},${DURATION_SECS},${MEASURED_PPS},\"${RESULT_LINE//\"/\"\"}\""
+	echo "run_id,mode,rate_pps,duration_secs,measured_pps,measured_pps_source,measured_pps_nnnpps,measured_pps_result,result_usec,result_packets,measurement_note,result_line,vm1_data_iface,vm1_rx_packets_before,vm1_rx_packets_after,vm1_rx_pps,backend_rx_packets_before,backend_rx_packets_after,backend_delivered_pps"
+	echo "${RUN_ID},${MODE},${RATE_PPS},${DURATION_SECS},${MEASURED_PPS},${MEASURED_PPS_SOURCE},${MEASURED_PPS_NNNPPS},${MEASURED_PPS_RESULT},${RESULT_USEC},${RESULT_PKTS},${MEASUREMENT_NOTE},\"${RESULT_LINE//\"/\"\"}\",${VM1_DATA_IFACE},${VM1_RX_BEFORE},${VM1_RX_AFTER},${VM1_RX_PPS},${BACKEND_RX_BEFORE},${BACKEND_RX_AFTER},${BACKEND_DELIVERED_PPS}"
 } >"${RUN_DIR}/summary.csv"
 
 {
@@ -316,7 +374,21 @@ fi
 	echo "- rate_pps: ${RATE_PPS}"
 	echo "- duration_secs: ${DURATION_SECS}"
 	echo "- measured_pps: ${MEASURED_PPS}"
+	echo "- measured_pps_source: ${MEASURED_PPS_SOURCE}"
+	echo "- measured_pps_nnnpps: ${MEASURED_PPS_NNNPPS}"
+	echo "- measured_pps_result: ${MEASURED_PPS_RESULT}"
+	echo "- measurement_note: ${MEASUREMENT_NOTE}"
+	echo "- vm1_data_iface: ${VM1_DATA_IFACE}"
+	echo "- vm1_rx_packets_before: ${VM1_RX_BEFORE}"
+	echo "- vm1_rx_packets_after: ${VM1_RX_AFTER}"
+	echo "- vm1_rx_pps: ${VM1_RX_PPS}"
+	echo "- backend_rx_packets_before: ${BACKEND_RX_BEFORE}"
+	echo "- backend_rx_packets_after: ${BACKEND_RX_AFTER}"
+	echo "- backend_delivered_pps: ${BACKEND_DELIVERED_PPS}"
 	echo "- active_katran_obj: ${ACTIVE_KATRAN_OBJ}"
+	if [ "${MEASURED_PPS_SOURCE}" = "missing" ]; then
+		echo "- warning: both throughput sources are missing in workload output"
+	fi
 	echo
 	echo "## pktgen Result"
 	echo

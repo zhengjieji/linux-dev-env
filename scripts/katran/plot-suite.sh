@@ -16,7 +16,7 @@ usage() {
 	cat <<USAGE
 Usage: $(basename "$0") [options]
 
-Generate suite result plots from suite-index.csv.
+Generate suite throughput plots from suite-index.csv.
 
 Options:
   --suite-dir <path>          Suite directory containing suite-index.csv
@@ -160,6 +160,302 @@ resolve_gnuplot() {
 	return 1
 }
 
+col_idx_by_name() {
+	local name="$1"
+	awk -F, -v n="${name}" 'NR==1 {for (i=1;i<=NF;i++) if ($i==n) {print i; exit}}' "${INDEX_CSV}"
+}
+
+source_counts() {
+	# Output: ok_cases,with_value,missing_value
+	local col_idx="$1"
+	awk -F, -v c="${col_idx}" '
+		NR>1 && $4=="ok" {
+			ok += 1
+			if (c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/) {
+				present += 1
+			} else {
+				missing += 1
+			}
+		}
+		END {
+			printf "%d,%d,%d\n", ok+0, present+0, missing+0
+		}
+	' "${INDEX_CSV}"
+}
+
+plot_one_source() {
+	# Args: source_label col_idx suffix
+	local source_label="$1"
+	local col_idx="$2"
+	local suffix="$3"
+	local mode_map="${OUT_DIR}/modes-${suffix}.csv"
+	local median_csv="${OUT_DIR}/suite-medians-live-${suffix}.csv"
+	local plot_expr=""
+	local pairs
+	local f
+	local mode
+	local rate
+	local values
+	local samples
+	local median_pps
+	local stdev_pps
+	local safe
+	local samples_file
+	local median_file
+	local png_out
+	local svg_out
+
+	: >"${mode_map}"
+	{
+		echo "mode,rate_pps,samples,median_pps,stdev_pps"
+		pairs="$(awk -F, -v c="${col_idx}" 'NR>1 && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2}' "${INDEX_CSV}" | sort -u)"
+		if [ -n "${pairs}" ]; then
+			while IFS=, read -r mode rate; do
+				[ -n "${mode}" ] || continue
+				values="$(awk -F, -v m="${mode}" -v r="${rate}" -v c="${col_idx}" 'NR>1 && $1==m && $2==r && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $c}' "${INDEX_CSV}" | sort -n)"
+				samples="$(printf '%s\n' "${values}" | sed '/^$/d' | wc -l | awk '{print $1}')"
+				if [ "${samples}" -gt 0 ]; then
+					median_pps="$(printf '%s\n' "${values}" | median_of_values)"
+					stdev_pps="$(printf '%s\n' "${values}" | stddev_of_values)"
+				else
+					median_pps=""
+					stdev_pps=""
+				fi
+				echo "${mode},${rate},${samples},${median_pps},${stdev_pps}"
+			done <<<"${pairs}"
+		fi
+	} >"${median_csv}"
+
+	awk -F, -v c="${col_idx}" 'NR>1 && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $3 "," $c}' "${INDEX_CSV}" | \
+	while IFS=, read -r mode rate rep pps; do
+		safe="$(safe_name "${mode}")"
+		echo "${rate} ${pps} ${rep}" >>"${DATA_DIR}/${suffix}-${safe}.samples.dat"
+		if ! grep -q "^${safe}," "${mode_map}" 2>/dev/null; then
+			echo "${safe},${mode}" >>"${mode_map}"
+		fi
+	done
+
+	awk -F, 'NR>1 && $3 ~ /^[0-9]+$/ && $3>0 && $4 ~ /^[0-9]+([.][0-9]+)?$/ && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $4 "," $5}' "${median_csv}" | \
+	while IFS=, read -r mode rate median stdev; do
+		safe="$(safe_name "${mode}")"
+		echo "${rate} ${median} ${stdev}" >>"${DATA_DIR}/${suffix}-${safe}.median.dat"
+		if ! grep -q "^${safe}," "${mode_map}" 2>/dev/null; then
+			echo "${safe},${mode}" >>"${mode_map}"
+		fi
+	done
+
+	if [ ! -s "${mode_map}" ]; then
+		info "[plot-suite] no numeric successful ${source_label} data in ${INDEX_CSV}; skip ${suffix} plot"
+		return 1
+	fi
+
+	for f in "${DATA_DIR}/${suffix}-"*.dat; do
+		[ -f "${f}" ] || continue
+		sort -n -k1,1 "${f}" -o "${f}"
+	done
+
+	while IFS=, read -r safe mode; do
+		[ -n "${safe}" ] || continue
+		samples_file="${DATA_DIR}/${suffix}-${safe}.samples.dat"
+		median_file="${DATA_DIR}/${suffix}-${safe}.median.dat"
+		[ -s "${median_file}" ] || continue
+		if [ -n "${plot_expr}" ]; then
+			plot_expr="${plot_expr}, "
+		fi
+		if [ -s "${samples_file}" ]; then
+			plot_expr="${plot_expr}'${samples_file}' using 1:2 with points pt 7 ps 0.8 title '${mode} samples', '${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
+		else
+			plot_expr="${plot_expr}'${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
+		fi
+	done < <(sort -u "${mode_map}")
+
+	if [ -z "${plot_expr}" ]; then
+		info "[plot-suite] no plottable ${source_label} data"
+		return 1
+	fi
+
+	png_out="${OUT_DIR}/throughput-vs-rate-${suffix}.png"
+	svg_out="${OUT_DIR}/throughput-vs-rate-${suffix}.svg"
+
+	# shellcheck disable=SC2016
+	"${GNUPLOT_BIN}" <<GNUPLOT
+set terminal pngcairo size 1400,900 enhanced
+set output '${png_out}'
+set title 'Katran Throughput vs Offered Rate (${SUITE_NAME}, ${source_label})'
+set xlabel 'Offered Rate (pps)'
+set ylabel 'Measured Throughput (pps)'
+set xrange [0:*]
+set yrange [0:*]
+set grid xtics ytics
+set key outside right top
+set border linewidth 1
+set tics out
+set format y '%.0f'
+set pointsize 1.1
+plot ${plot_expr}
+GNUPLOT
+
+	# shellcheck disable=SC2016
+	"${GNUPLOT_BIN}" <<GNUPLOT
+set terminal svg size 1400,900 dynamic enhanced
+set output '${svg_out}'
+set title 'Katran Throughput vs Offered Rate (${SUITE_NAME}, ${source_label})'
+set xlabel 'Offered Rate (pps)'
+set ylabel 'Measured Throughput (pps)'
+set xrange [0:*]
+set yrange [0:*]
+set grid xtics ytics
+set key outside right top
+set border linewidth 1
+set tics out
+set format y '%.0f'
+set pointsize 1.1
+plot ${plot_expr}
+GNUPLOT
+
+	info "[plot-suite] wrote ${png_out}"
+	info "[plot-suite] wrote ${svg_out}"
+	info "[plot-suite] wrote ${median_csv}"
+	return 0
+}
+
+plot_metric_from_index() {
+	# Args: metric_label index_col suffix y_label
+	local metric_label="$1"
+	local col_idx="$2"
+	local suffix="$3"
+	local y_label="$4"
+	local mode_map="${OUT_DIR}/modes-${suffix}.csv"
+	local median_csv="${OUT_DIR}/${suffix}-median-stdev.csv"
+	local plot_expr=""
+	local pairs
+	local mode
+	local rate
+	local values
+	local samples
+	local median_val
+	local stdev_val
+	local safe
+	local samples_file
+	local median_file
+	local png_out="${OUT_DIR}/${suffix}-vs-rate.png"
+	local svg_out="${OUT_DIR}/${suffix}-vs-rate.svg"
+	local f
+
+	if [ -z "${col_idx}" ] || [ "${col_idx}" = "0" ]; then
+		info "[plot-suite] column missing for ${metric_label}; skip"
+		return 1
+	fi
+
+	: >"${mode_map}"
+	{
+		echo "mode,rate_pps,samples,median,stdev"
+		pairs="$(awk -F, -v c="${col_idx}" 'NR>1 && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2}' "${INDEX_CSV}" | sort -u)"
+		if [ -n "${pairs}" ]; then
+			while IFS=, read -r mode rate; do
+				[ -n "${mode}" ] || continue
+				values="$(awk -F, -v m="${mode}" -v r="${rate}" -v c="${col_idx}" 'NR>1 && $1==m && $2==r && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $c}' "${INDEX_CSV}" | sort -n)"
+				samples="$(printf '%s\n' "${values}" | sed '/^$/d' | wc -l | awk '{print $1}')"
+				if [ "${samples}" -gt 0 ]; then
+					median_val="$(printf '%s\n' "${values}" | median_of_values)"
+					stdev_val="$(printf '%s\n' "${values}" | stddev_of_values)"
+				else
+					median_val=""
+					stdev_val=""
+				fi
+				echo "${mode},${rate},${samples},${median_val},${stdev_val}"
+			done <<<"${pairs}"
+		fi
+	} >"${median_csv}"
+
+	awk -F, -v c="${col_idx}" 'NR>1 && $4=="ok" && c>0 && $c ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $3 "," $c}' "${INDEX_CSV}" | \
+	while IFS=, read -r mode rate rep value; do
+		safe="$(safe_name "${mode}")"
+		echo "${rate} ${value} ${rep}" >>"${DATA_DIR}/${suffix}-${safe}.samples.dat"
+		if ! grep -q "^${safe}," "${mode_map}" 2>/dev/null; then
+			echo "${safe},${mode}" >>"${mode_map}"
+		fi
+	done
+
+	awk -F, 'NR>1 && $3 ~ /^[0-9]+$/ && $3>0 && $4 ~ /^[0-9]+([.][0-9]+)?$/ && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $4 "," $5}' "${median_csv}" | \
+	while IFS=, read -r mode rate median stdev; do
+		safe="$(safe_name "${mode}")"
+		echo "${rate} ${median} ${stdev}" >>"${DATA_DIR}/${suffix}-${safe}.median.dat"
+		if ! grep -q "^${safe}," "${mode_map}" 2>/dev/null; then
+			echo "${safe},${mode}" >>"${mode_map}"
+		fi
+	done
+
+	if [ ! -s "${mode_map}" ]; then
+		info "[plot-suite] no numeric data for ${metric_label}; skip"
+		return 1
+	fi
+
+	for f in "${DATA_DIR}/${suffix}-"*.dat; do
+		[ -f "${f}" ] || continue
+		sort -n -k1,1 "${f}" -o "${f}"
+	done
+
+	while IFS=, read -r safe mode; do
+		[ -n "${safe}" ] || continue
+		samples_file="${DATA_DIR}/${suffix}-${safe}.samples.dat"
+		median_file="${DATA_DIR}/${suffix}-${safe}.median.dat"
+		[ -s "${median_file}" ] || continue
+		if [ -n "${plot_expr}" ]; then
+			plot_expr="${plot_expr}, "
+		fi
+		if [ -s "${samples_file}" ]; then
+			plot_expr="${plot_expr}'${samples_file}' using 1:2 with points pt 7 ps 0.8 title '${mode} samples', '${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
+		else
+			plot_expr="${plot_expr}'${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
+		fi
+	done < <(sort -u "${mode_map}")
+
+	if [ -z "${plot_expr}" ]; then
+		info "[plot-suite] no plottable data for ${metric_label}"
+		return 1
+	fi
+
+	# shellcheck disable=SC2016
+	"${GNUPLOT_BIN}" <<GNUPLOT
+set terminal pngcairo size 1400,900 enhanced
+set output '${png_out}'
+set title '${metric_label} vs Offered Rate (${SUITE_NAME})'
+set xlabel 'Offered Rate (pps)'
+set ylabel '${y_label}'
+set xrange [0:*]
+set yrange [0:*]
+set grid xtics ytics
+set key outside right top
+set border linewidth 1
+set tics out
+set pointsize 1.1
+plot ${plot_expr}
+GNUPLOT
+
+	# shellcheck disable=SC2016
+	"${GNUPLOT_BIN}" <<GNUPLOT
+set terminal svg size 1400,900 dynamic enhanced
+set output '${svg_out}'
+set title '${metric_label} vs Offered Rate (${SUITE_NAME})'
+set xlabel 'Offered Rate (pps)'
+set ylabel '${y_label}'
+set xrange [0:*]
+set yrange [0:*]
+set grid xtics ytics
+set key outside right top
+set border linewidth 1
+set tics out
+set pointsize 1.1
+plot ${plot_expr}
+GNUPLOT
+
+	info "[plot-suite] wrote ${png_out}"
+	info "[plot-suite] wrote ${svg_out}"
+	info "[plot-suite] wrote ${median_csv}"
+	return 0
+}
+
 if [ -z "${SUITE_DIR}" ] && [ -z "${INDEX_CSV}" ]; then
 	INDEX_CSV="$(ls -1t "${ROOT_DIR}"/results/experiments/*/suite-index.csv 2>/dev/null | head -n1 || true)"
 	if [ -n "${INDEX_CSV}" ]; then
@@ -201,123 +497,72 @@ fi
 rm -f "${OUT_DIR}/README.txt"
 
 DATA_DIR="${OUT_DIR}/data"
-MODE_MAP="${OUT_DIR}/modes.csv"
-MEDIAN_CSV="${OUT_DIR}/suite-medians-live.csv"
+SOURCE_SUMMARY_CSV="${OUT_DIR}/throughput-source-summary.csv"
 rm -rf "${DATA_DIR}"
 mkdir -p "${DATA_DIR}"
-: >"${MODE_MAP}"
-
-pairs="$(awk -F, 'NR>1 && $4=="ok" && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2}' "${INDEX_CSV}" | sort -u)"
-
-{
-	echo "mode,rate_pps,samples,median_pps,stdev_pps"
-	if [ -n "${pairs}" ]; then
-		while IFS=, read -r mode rate; do
-			[ -n "${mode}" ] || continue
-			values="$(awk -F, -v m="${mode}" -v r="${rate}" '$1==m && $2==r && $4=="ok" && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $5}' "${INDEX_CSV}" | sort -n)"
-			samples="$(printf '%s\n' "${values}" | sed '/^$/d' | wc -l | awk '{print $1}')"
-			if [ "${samples}" -gt 0 ]; then
-				median_pps="$(printf '%s\n' "${values}" | median_of_values)"
-				stdev_pps="$(printf '%s\n' "${values}" | stddev_of_values)"
-			else
-				median_pps=""
-				stdev_pps=""
-			fi
-			echo "${mode},${rate},${samples},${median_pps},${stdev_pps}"
-		done <<<"${pairs}"
-	fi
-} >"${MEDIAN_CSV}"
-
-awk -F, 'NR>1 && $4=="ok" && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $3 "," $5}' "${INDEX_CSV}" | \
-while IFS=, read -r mode rate rep pps; do
-	safe="$(safe_name "${mode}")"
-	echo "${rate} ${pps} ${rep}" >>"${DATA_DIR}/${safe}.samples.dat"
-	if ! grep -q "^${safe}," "${MODE_MAP}" 2>/dev/null; then
-		echo "${safe},${mode}" >>"${MODE_MAP}"
-	fi
-done
-
-awk -F, 'NR>1 && $3 ~ /^[0-9]+$/ && $3>0 && $4 ~ /^[0-9]+([.][0-9]+)?$/ && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $4 "," $5}' "${MEDIAN_CSV}" | \
-while IFS=, read -r mode rate median stdev; do
-	safe="$(safe_name "${mode}")"
-	echo "${rate} ${median} ${stdev}" >>"${DATA_DIR}/${safe}.median.dat"
-	if ! grep -q "^${safe}," "${MODE_MAP}" 2>/dev/null; then
-		echo "${safe},${mode}" >>"${MODE_MAP}"
-	fi
-done
-
-if [ ! -s "${MODE_MAP}" ]; then
-	info "[plot-suite] no numeric successful data in ${INDEX_CSV}; nothing to plot"
-	exit 0
-fi
-
-for f in "${DATA_DIR}"/*.dat; do
-	[ -f "${f}" ] || continue
-	sort -n -k1,1 "${f}" -o "${f}"
-done
-
-PLOT_EXPR=""
-while IFS=, read -r safe mode; do
-	[ -n "${safe}" ] || continue
-	samples_file="${DATA_DIR}/${safe}.samples.dat"
-	median_file="${DATA_DIR}/${safe}.median.dat"
-	[ -s "${median_file}" ] || continue
-	if [ -n "${PLOT_EXPR}" ]; then
-		PLOT_EXPR="${PLOT_EXPR}, "
-	fi
-	if [ -s "${samples_file}" ]; then
-		PLOT_EXPR="${PLOT_EXPR}'${samples_file}' using 1:2 with points pt 7 ps 0.8 title '${mode} samples', '${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
-	else
-		PLOT_EXPR="${PLOT_EXPR}'${median_file}' using 1:2:3 with yerrorbars pt 0 lw 1 title '${mode} stdev', '${median_file}' using 1:2 with linespoints lw 2 pt 5 title '${mode} median'"
-	fi
-done < <(sort -u "${MODE_MAP}")
-
-if [ -z "${PLOT_EXPR}" ]; then
-	info "[plot-suite] no plottable data found"
-	exit 0
-fi
 
 SUITE_NAME="$(basename -- "${SUITE_DIR}")"
-PNG_OUT="${OUT_DIR}/throughput-vs-rate.png"
-SVG_OUT="${OUT_DIR}/throughput-vs-rate.svg"
+NNN_COL_IDX="$(col_idx_by_name measured_pps_nnnpps || true)"
+RESULT_COL_IDX="$(col_idx_by_name measured_pps_result || true)"
+EFFECTIVE_COL_IDX="$(col_idx_by_name measured_pps || true)"
+NNN_SOURCE_NAME="measured_pps_nnnpps"
+RESULT_SOURCE_NAME="measured_pps_result"
+if [ -z "${NNN_COL_IDX}" ]; then
+	NNN_COL_IDX="${EFFECTIVE_COL_IDX}"
+	NNN_SOURCE_NAME="measured_pps (legacy)"
+fi
+if [ -z "${RESULT_COL_IDX}" ]; then
+	RESULT_COL_IDX="${EFFECTIVE_COL_IDX}"
+	RESULT_SOURCE_NAME="measured_pps (legacy)"
+fi
 
-# shellcheck disable=SC2016
-"${GNUPLOT_BIN}" <<GNUPLOT
-set terminal pngcairo size 1400,900 enhanced
-set output '${PNG_OUT}'
-set title 'Katran Throughput vs Offered Rate (${SUITE_NAME})'
-set xlabel 'Offered Rate (pps)'
-set ylabel 'Measured Throughput (pps)'
-set xrange [0:*]
-set yrange [0:*]
-set grid xtics ytics
-set key outside right top
-set border linewidth 1
-set tics out
-set format y '%.0f'
-set pointsize 1.1
-plot ${PLOT_EXPR}
-GNUPLOT
+: >"${SOURCE_SUMMARY_CSV}"
+echo "source,column,ok_cases,with_value,missing_value" >"${SOURCE_SUMMARY_CSV}"
 
-# shellcheck disable=SC2016
-"${GNUPLOT_BIN}" <<GNUPLOT
-set terminal svg size 1400,900 dynamic enhanced
-set output '${SVG_OUT}'
-set title 'Katran Throughput vs Offered Rate (${SUITE_NAME})'
-set xlabel 'Offered Rate (pps)'
-set ylabel 'Measured Throughput (pps)'
-set xrange [0:*]
-set yrange [0:*]
-set grid xtics ytics
-set key outside right top
-set border linewidth 1
-set tics out
-set format y '%.0f'
-set pointsize 1.1
-plot ${PLOT_EXPR}
-GNUPLOT
+stats_nnn="$(source_counts "${NNN_COL_IDX:-0}")"
+stats_res="$(source_counts "${RESULT_COL_IDX:-0}")"
+IFS=, read -r n_ok n_present n_missing <<<"${stats_nnn}"
+IFS=, read -r r_ok r_present r_missing <<<"${stats_res}"
+echo "nnnpps,${NNN_SOURCE_NAME},${n_ok},${n_present},${n_missing}" >>"${SOURCE_SUMMARY_CSV}"
+echo "result,${RESULT_SOURCE_NAME},${r_ok},${r_present},${r_missing}" >>"${SOURCE_SUMMARY_CSV}"
+
+nnn_ok_plot=0
+res_ok_plot=0
+if plot_one_source "NNNpps line" "${NNN_COL_IDX:-0}" "nnnpps"; then
+	nnn_ok_plot=1
+fi
+if plot_one_source "Result packets/usec" "${RESULT_COL_IDX:-0}" "result"; then
+	res_ok_plot=1
+fi
+
+if [ "${nnn_ok_plot}" -eq 0 ] && [ "${res_ok_plot}" -eq 0 ]; then
+	info "[plot-suite] no plottable throughput data for either source"
+	exit 0
+fi
+
+# Backward-compatibility aliases:
+# - prefer NNNpps output as default throughput-vs-rate.*
+# - if NNNpps missing, fallback to Result source.
+if [ "${nnn_ok_plot}" -eq 1 ]; then
+	cp -f "${OUT_DIR}/throughput-vs-rate-nnnpps.png" "${OUT_DIR}/throughput-vs-rate.png"
+	cp -f "${OUT_DIR}/throughput-vs-rate-nnnpps.svg" "${OUT_DIR}/throughput-vs-rate.svg"
+	cp -f "${OUT_DIR}/suite-medians-live-nnnpps.csv" "${OUT_DIR}/suite-medians-live.csv"
+elif [ "${res_ok_plot}" -eq 1 ]; then
+	cp -f "${OUT_DIR}/throughput-vs-rate-result.png" "${OUT_DIR}/throughput-vs-rate.png"
+	cp -f "${OUT_DIR}/throughput-vs-rate-result.svg" "${OUT_DIR}/throughput-vs-rate.svg"
+	cp -f "${OUT_DIR}/suite-medians-live-result.csv" "${OUT_DIR}/suite-medians-live.csv"
+fi
+
+VM1_RX_COL_IDX="$(col_idx_by_name vm1_rx_pps || true)"
+BACKEND_DELIVERED_COL_IDX="$(col_idx_by_name backend_delivered_pps || true)"
+VM1_RX_PLOT_OK=0
+BACKEND_DELIVERED_PLOT_OK=0
+if plot_metric_from_index "VM1 RX PPS" "${VM1_RX_COL_IDX:-0}" "vm1-rx-pps" "VM1 RX (pps)"; then
+	VM1_RX_PLOT_OK=1
+fi
+if plot_metric_from_index "Backend Delivered PPS" "${BACKEND_DELIVERED_COL_IDX:-0}" "backend-delivered-pps" "Backend Delivered (pps)"; then
+	BACKEND_DELIVERED_PLOT_OK=1
+fi
 
 info "[plot-suite] using gnuplot: ${GNUPLOT_BIN}"
-info "[plot-suite] wrote ${PNG_OUT}"
-info "[plot-suite] wrote ${SVG_OUT}"
-info "[plot-suite] wrote ${MEDIAN_CSV}"
+info "[plot-suite] wrote ${SOURCE_SUMMARY_CSV}"
