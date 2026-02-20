@@ -199,75 +199,123 @@ In the q-script you must append a new rule.
 Find the line that starts with `"net += -netdev user..."`.
 Then at the end of the line add the text ```"hostfwd=tcp::DOCKER_PORT-:QEMU_PORT"```
 
-## Katran Experiments
+## Experiments (Exp1/Exp2/Exp3)
 
-Experiment plan document:
+Plans and reports:
+
+- `documents/experiment-1.md`
+- `documents/experiment-1-report-20260219T233444Z.md`
+- `documents/experiment-2.md`
+- `documents/experiment-3.md`
+
+Initialize organized results directories:
 
 ```sh
-cat documents/katran-experiment-plan.md
+make exp-results-init
 ```
 
-Clone Katran source into `source/katran` and build `balancer.bpf.o` on host:
+### Exp1 (implemented)
+
+Build Katran object:
 
 ```sh
 make katran-clone
-
-# optional ref pin
-scripts/katran/clone-katran.sh --ref <tag-or-commit>
-
-# clone/update only (skip host build)
-scripts/katran/clone-katran.sh --skip-build
-
-# manual rebuild of host object
 make katran-build-host
 ```
 
-Per-VM setup scripts:
+Prepare both VMs:
 
 ```sh
-# from host into vm1
-make katran-vm1-setup
-
-# from host into vm2
-make katran-vm2-setup
+make exp1-vm-setup
 ```
 
-Run one experiment:
+Run one case:
 
 ```sh
-make katran-exp-one KATRAN_MODE=baseline-no-katran KATRAN_RATE_PPS=200000 KATRAN_DURATION_SECS=30
-make katran-exp-one KATRAN_MODE=katran-orig-bpf KATRAN_RATE_PPS=200000 KATRAN_DURATION_SECS=30
+make exp1-run-one EXP1_MODE=baseline-no-katran EXP1_RATE_PPS=200000 EXP1_DURATION_SECS=30
+make exp1-run-one EXP1_MODE=katran-orig-bpf EXP1_RATE_PPS=200000 EXP1_DURATION_SECS=30
 ```
 
-Run full suite:
+Run full suite (Exp1 matrix):
 
 ```sh
-make katran-exp-suite
-# custom matrix
-scripts/katran/run-suite.sh --modes "baseline-no-katran katran-orig-bpf" --rates "$(seq 50000 50000 1000000)" --repeats 3 --duration 30
+make exp1-run-suite
 ```
-During suite runs, host console shows one-line progress with ETA.
-Plots are refreshed automatically during and after suite execution under `results/experiments/<suite-id>/plots/`.
-The throughput plot includes standard-deviation (stdev) error bars per mode/rate when repeats > 1.
-If gnuplot is missing, install it in user space (no sudo):
+
+Plot latest suite:
 
 ```sh
-make katran-install-plot-tool
+make exp1-plot-latest
 ```
 
-Regenerate plots manually (this also auto-installs user-space gnuplot when needed):
+Legacy aliases are still available:
+
+- `make katran-exp-one`
+- `make katran-exp-suite`
+- `make katran-plot-suite`
+
+### Exp2 (implemented)
+
+Recommended flow:
 
 ```sh
-make katran-plot-suite
-make katran-plot-suite KATRAN_SUITE_DIR=results/experiments/<suite-id>
+make exp2-precheck
+make exp2-vm-setup
+make exp2-prepare-source
+make exp2-build-oracle
+make exp2-bytecode-compare # optional manual compare
+make exp2-test-smoke
 ```
 
-Results layout:
+Then run Exp2 measurements:
 
-- one-off run: `results/experiments/<run-id>/`
-- suite run root: `results/experiments/<suite-id>/`
-- suite case runs: `results/experiments/<suite-id>/runs/<run-id>/`
-- suite case logs: `results/experiments/<suite-id>/logs-cases/*.log`
-- suite artifacts: `suite-index.csv`, `suite-medians.csv`, `suite-summary.md`, `plots/throughput-vs-rate.png`, `plots/throughput-vs-rate.svg`
+```sh
+make exp2-discovery
+make exp2-run-throughput
+make exp2-run-latency
+make exp2-analyze
+make exp2-plot
+```
 
-Each run directory stores host/vm logs, raw metrics, `summary.csv`, and `summary.md`.
+Tune latency progress refresh if needed (default `1` second):
+
+```sh
+make exp2-run-latency EXP2_LAT_PROGRESS_INTERVAL=1
+```
+
+Or run one-shot pipeline:
+
+```sh
+make exp2-run-all
+```
+
+For plots only from latest analysis:
+
+```sh
+make exp2-plot
+```
+
+Exp2 result layout:
+
+- `results/exp2/precheck/`
+- `results/exp2/setup/`
+- `results/exp2/smoke/`
+- `results/exp2/discovery/`
+- `results/exp2/measurement/throughput/`
+- `results/exp2/measurement/latency/`
+- `results/exp2/oracle-builds/` (includes bytecode compare artifacts per oracle build)
+- `results/exp2/analysis/`
+
+### Exp3 (placeholder)
+
+```sh
+make exp3-auto-v0
+```
+
+Overall organized results:
+
+- `results/exp1/runs/`
+- `results/exp1/suites/`
+- `results/exp2/`
+- `results/exp3/runs/`
+- `results/exp3/analysis/`

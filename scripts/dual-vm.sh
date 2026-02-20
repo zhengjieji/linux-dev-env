@@ -39,6 +39,7 @@ SSH_OPTS=(
 	-o UserKnownHostsFile=/dev/null
 	-o StrictHostKeyChecking=no
 	-o ConnectTimeout=3
+	-o LogLevel=ERROR
 )
 
 IMAGE_REF=""

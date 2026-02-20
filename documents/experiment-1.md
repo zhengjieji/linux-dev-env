@@ -1,4 +1,4 @@
-# Katran Experiment Plan
+# Katran Experiment Plan 1
 
 ## Objective
 Create a reproducible benchmark workflow for BPF optimization studies.
@@ -57,39 +57,37 @@ make katran-clone
 
 ### 1) Prepare VM1/VM2 runtime once per boot
 ```sh
-make katran-vm1-setup
-make katran-vm2-setup
+make exp1-vm-setup
 ```
 
 ### 2) Run baseline experiment
 ```sh
-make katran-exp-one \
-  KATRAN_MODE=baseline-no-katran \
-  KATRAN_RATE_PPS=200000 \
-  KATRAN_DURATION_SECS=30
+make exp1-run-one \
+  EXP1_MODE=baseline-no-katran \
+  EXP1_RATE_PPS=200000 \
+  EXP1_DURATION_SECS=30
 ```
 
 ### 3) Run Katran original experiment
 ```sh
-make katran-exp-one \
-  KATRAN_MODE=katran-orig-bpf \
-  KATRAN_RATE_PPS=200000 \
-  KATRAN_DURATION_SECS=30
+make exp1-run-one \
+  EXP1_MODE=katran-orig-bpf \
+  EXP1_RATE_PPS=200000 \
+  EXP1_DURATION_SECS=30
 ```
 
 ### 4) Run full matrix (recommended)
 ```sh
-make katran-exp-suite
+make exp1-run-suite
 
 # custom matrix example
-scripts/katran/run-suite.sh \
-  --modes "baseline-no-katran katran-orig-bpf" \
-  --rates "$(seq 50000 50000 1000000)" \
-  --duration 30 \
-  --repeats 3
+EXP1_MODES="baseline-no-katran katran-orig-bpf" \
+EXP1_RATES="$(seq 50000 50000 1000000)" \
+EXP1_DURATION_SECS=30 EXP1_REPEATS=3 \
+make exp1-run-suite
 ```
 During suite runs, host prints one-line progress with ETA.
-Plots are auto-generated under `results/experiments/<suite-id>/plots/` after each case and at suite end.
+Plots are auto-generated under `results/exp1/suites/<suite-id>/plots/` after each case and at suite end.
 Plots show median throughput plus standard-deviation (stdev) error bars when repeats > 1.
 If gnuplot is missing, install without sudo:
 
@@ -100,15 +98,17 @@ make katran-install-plot-tool
 Regenerate plots manually:
 
 ```sh
-make katran-plot-suite KATRAN_SUITE_DIR=results/experiments/<suite-id>
+make exp1-plot-latest
+# or explicit suite:
+make KATRAN_SUITE_DIR=results/exp1/suites/<suite-id> exp1-plot-latest
 ```
 
 ## What Outputs To Check
 Result hierarchy:
-- one-off run: `results/experiments/<run-id>/`
-- suite root: `results/experiments/<suite-id>/`
-- suite case runs: `results/experiments/<suite-id>/runs/<run-id>/`
-- suite case logs: `results/experiments/<suite-id>/logs-cases/*.log`
+- one-off run: `results/exp1/runs/<run-id>/`
+- suite root: `results/exp1/suites/<suite-id>/`
+- suite case runs: `results/exp1/suites/<suite-id>/runs/<run-id>/`
+- suite case logs: `results/exp1/suites/<suite-id>/logs-cases/*.log`
 
 Per-run files to inspect:
 - `meta.env`

@@ -9,6 +9,7 @@ BACKEND_PORT=8080
 RS1_IP="10.200.1.2"
 RS2_IP="10.200.2.2"
 VM1_DATA_MAC="52:54:00:aa:00:11"
+BPF_OBJ_OVERRIDE=""
 
 usage() {
 	cat <<USAGE
@@ -19,12 +20,14 @@ Apply VM1 dataplane mode.
 Modes:
   baseline-no-katran
   katran-orig-bpf
+  katran-oracle-bpf
 
 Options:
   --mode <mode>      Mode to apply
   --vip <ip>         VIP (default: ${VIP})
   --vip-port <n>     VIP port (default: ${VIP_PORT})
   --backend-port <n> Backend port (default: ${BACKEND_PORT})
+  --bpf-obj <path>   Explicit BPF object path for katran modes
   -h, --help         Show this help
 USAGE
 }
@@ -49,6 +52,11 @@ while [ $# -gt 0 ]; do
 		--backend-port)
 			[ $# -gt 1 ] || { echo "--backend-port requires value" >&2; exit 1; }
 			BACKEND_PORT="$2"
+			shift 2
+			;;
+		--bpf-obj)
+			[ $# -gt 1 ] || { echo "--bpf-obj requires value" >&2; exit 1; }
+			BPF_OBJ_OVERRIDE="$2"
 			shift 2
 			;;
 		-h|--help)
@@ -96,7 +104,8 @@ find_katran_obj() {
 		"/linux-dev-env/source/katran/katran/lib/bpf/balancer.bpf.o" \
 		"/linux-dev-env/source/katran/build/katran/lib/bpf/balancer.bpf.o" \
 		"/linux-dev-env/source/katran/_build/katran/lib/bpf/balancer.bpf.o" \
-		"/linux-dev-env/source/katran/lib/bpf/balancer.bpf.o"; do
+		"/linux-dev-env/source/katran/lib/bpf/balancer.bpf.o" \
+		"/linux-dev-env/source/katran-exp2/build/katran/lib/bpf/balancer.bpf.o"; do
 		if [ -f "${candidate}" ]; then
 			echo "${candidate}"
 			return 0
@@ -108,10 +117,18 @@ find_katran_obj() {
 attach_katran_bpf() {
 	local obj
 	local sec
-	obj="$(find_katran_obj)" || {
-		echo "katran bpf object not found under /linux-dev-env/source/katran" >&2
-		exit 1
-	}
+	if [ -n "${BPF_OBJ_OVERRIDE}" ]; then
+		obj="${BPF_OBJ_OVERRIDE}"
+		[ -f "${obj}" ] || {
+			echo "explicit bpf object not found: ${obj}" >&2
+			exit 1
+		}
+	else
+		obj="$(find_katran_obj)" || {
+			echo "katran bpf object not found under /linux-dev-env/source" >&2
+			exit 1
+		}
+	fi
 	sec="${KATRAN_XDP_SEC:-xdp}"
 	if ip -force link set dev "${DATA_IFACE}" xdpgeneric obj "${obj}" sec "${sec}"; then
 		echo "[vm1-run-mode] attached katran object ${obj} sec ${sec}"
@@ -126,7 +143,7 @@ case "${MODE}" in
 		detach_xdp
 		configure_ipvs_baseline
 		;;
-	katran-orig-bpf)
+	katran-orig-bpf|katran-oracle-bpf)
 		configure_ipvs_baseline
 		attach_katran_bpf
 		;;
@@ -136,6 +153,6 @@ case "${MODE}" in
 		;;
 esac
 
-echo "[vm1-run-mode] mode=${MODE} iface=${DATA_IFACE} vip=${VIP}:${VIP_PORT}"
+echo "[vm1-run-mode] mode=${MODE} iface=${DATA_IFACE} vip=${VIP}:${VIP_PORT} bpf_obj=${BPF_OBJ_OVERRIDE}"
 ipvsadm -Ln
 ip -d link show dev "${DATA_IFACE}" | sed -n '1,3p'

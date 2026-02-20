@@ -16,31 +16,39 @@ NO_VM_START=0
 NO_VM_SETUP=0
 KATRAN_XDP_SEC="${KATRAN_XDP_SEC:-}"
 DST_MAC="52:54:00:aa:00:11"
-KATRAN_BALANCER_OBJ="${ROOT_DIR}/source/katran/build/katran/lib/bpf/balancer.bpf.o"
+KATRAN_SRC="${ROOT_DIR}/source/katran"
+KATRAN_ORACLE_SRC="${ROOT_DIR}/source/katran-exp2"
+KATRAN_ORIG_OBJ="${KATRAN_BALANCER_OBJ:-${ROOT_DIR}/source/katran/build/katran/lib/bpf/balancer.bpf.o}"
+KATRAN_ORACLE_OBJ="${KATRAN_ORACLE_OBJ:-${ROOT_DIR}/source/katran-exp2/build/katran/lib/bpf/balancer.bpf.o}"
 RESULTS_DIR="${ROOT_DIR}/results/experiments"
 
 usage() {
 	cat <<USAGE
 Usage: $(basename "$0") --mode <mode> [options]
 
-Run one benchmark experiment and store logs/metrics under <results-dir>/<run-id>/.
+Run one benchmark experiment and store logs/metrics under <results-dir>/<run-id>/. 
 
 Modes:
   baseline-no-katran
   katran-orig-bpf
+  katran-oracle-bpf
 
 Options:
-  --mode <name>         Experiment mode (required)
-  --rate-pps <n>        Workload rate in pps (default: ${RATE_PPS})
-  --duration <sec>      Workload duration seconds (default: ${DURATION_SECS})
-  --vip <ip>            VIP address (default: ${VIP})
-  --vip-port <n>        VIP port (default: ${VIP_PORT})
-  --label <text>        Run label suffix
-  --results-dir <path>  Parent directory for run folders (default: ${RESULTS_DIR})
-  --no-vm-start         Assume VMs are already running
-  --no-vm-setup         Skip vm1/vm2 setup scripts
-  --xdp-sec <name>      Section name for Katran object attach
-  -h, --help            Show this help
+  --mode <name>              Experiment mode (required)
+  --rate-pps <n>             Workload rate in pps (default: ${RATE_PPS})
+  --duration <sec>           Workload duration seconds (default: ${DURATION_SECS})
+  --vip <ip>                 VIP address (default: ${VIP})
+  --vip-port <n>             VIP port (default: ${VIP_PORT})
+  --label <text>             Run label suffix
+  --results-dir <path>       Parent directory for run folders (default: ${RESULTS_DIR})
+  --no-vm-start              Assume VMs are already running
+  --no-vm-setup              Skip vm1/vm2 setup scripts
+  --xdp-sec <name>           Section name for Katran object attach
+  --katran-src <path>        Source root for original Katran build (default: ${KATRAN_SRC})
+  --katran-obj <path>        Explicit object path for katran-orig-bpf
+  --katran-oracle-src <path> Source root for oracle Katran build (default: ${KATRAN_ORACLE_SRC})
+  --katran-oracle-obj <path> Explicit object path for katran-oracle-bpf
+  -h, --help                 Show this help
 USAGE
 }
 
@@ -94,6 +102,26 @@ while [ $# -gt 0 ]; do
 			KATRAN_XDP_SEC="$2"
 			shift 2
 			;;
+		--katran-src)
+			[ $# -gt 1 ] || die "--katran-src requires value"
+			KATRAN_SRC="$2"
+			shift 2
+			;;
+		--katran-obj)
+			[ $# -gt 1 ] || die "--katran-obj requires value"
+			KATRAN_ORIG_OBJ="$2"
+			shift 2
+			;;
+		--katran-oracle-src)
+			[ $# -gt 1 ] || die "--katran-oracle-src requires value"
+			KATRAN_ORACLE_SRC="$2"
+			shift 2
+			;;
+		--katran-oracle-obj)
+			[ $# -gt 1 ] || die "--katran-oracle-obj requires value"
+			KATRAN_ORACLE_OBJ="$2"
+			shift 2
+			;;
 		-h|--help)
 			usage
 			exit 0
@@ -106,7 +134,7 @@ done
 
 [ -n "${MODE}" ] || { usage; exit 1; }
 case "${MODE}" in
-	baseline-no-katran|katran-orig-bpf) ;;
+	baseline-no-katran|katran-orig-bpf|katran-oracle-bpf) ;;
 	*) die "unsupported mode: ${MODE}" ;;
 esac
 
@@ -120,34 +148,89 @@ resolve_path() {
 	esac
 }
 
+to_vm_repo_path() {
+	local p="$1"
+	case "${p}" in
+		"${ROOT_DIR}"/*)
+			printf '/linux-dev-env/%s\n' "${p#${ROOT_DIR}/}"
+			;;
+		/linux-dev-env/*)
+			printf '%s\n' "${p}"
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
 if [ -z "${LABEL}" ]; then
 	LABEL="${MODE}-${RATE_PPS}pps-${DURATION_SECS}s"
 fi
 
 RESULTS_DIR="$(resolve_path "${RESULTS_DIR}")"
+KATRAN_SRC="$(resolve_path "${KATRAN_SRC}")"
+KATRAN_ORACLE_SRC="$(resolve_path "${KATRAN_ORACLE_SRC}")"
+KATRAN_ORIG_OBJ="$(resolve_path "${KATRAN_ORIG_OBJ}")"
+KATRAN_ORACLE_OBJ="$(resolve_path "${KATRAN_ORACLE_OBJ}")"
 mkdir -p "${RESULTS_DIR}"
 
 RUN_ID="$(new_run_id "${LABEL}")"
 RUN_DIR="${RESULTS_DIR}/${RUN_ID}"
 mkdir -p "${RUN_DIR}/logs-host" "${RUN_DIR}/logs-vm1" "${RUN_DIR}/logs-vm2" "${RUN_DIR}/metrics"
 
-ensure_katran_obj_for_mode() {
-	if [ "${MODE}" != "katran-orig-bpf" ]; then
-		return 0
-	fi
-	if [ -f "${KATRAN_BALANCER_OBJ}" ]; then
-		log "found Katran object: ${KATRAN_BALANCER_OBJ}"
-		return 0
-	fi
-	log "Katran object missing; building on host"
-	if ! "${SCRIPT_DIR}/build-katran-host.sh" >"${RUN_DIR}/logs-host/katran-host-build.log" 2>&1; then
-		die "katran host build failed; see ${RUN_DIR}/logs-host/katran-host-build.log"
-	fi
-	[ -f "${KATRAN_BALANCER_OBJ}" ] || die "katran object still missing after build: ${KATRAN_BALANCER_OBJ}"
-	log "Katran object ready"
+obj_for_mode() {
+	case "$1" in
+		katran-orig-bpf) printf '%s\n' "${KATRAN_ORIG_OBJ}" ;;
+		katran-oracle-bpf) printf '%s\n' "${KATRAN_ORACLE_OBJ}" ;;
+		*) printf '%s\n' "" ;;
+	esac
 }
 
-ensure_katran_obj_for_mode
+src_for_mode() {
+	case "$1" in
+		katran-orig-bpf) printf '%s\n' "${KATRAN_SRC}" ;;
+		katran-oracle-bpf) printf '%s\n' "${KATRAN_ORACLE_SRC}" ;;
+		*) printf '%s\n' "" ;;
+	esac
+}
+
+ensure_katran_obj_for_mode() {
+	local mode="$1"
+	local obj
+	local src
+	local default_obj
+	obj="$(obj_for_mode "${mode}")"
+	src="$(src_for_mode "${mode}")"
+	if [ -z "${obj}" ]; then
+		return 0
+	fi
+	if [ -f "${obj}" ]; then
+		log "found object for ${mode}: ${obj}"
+		return 0
+	fi
+	if [ -z "${src}" ] || [ ! -d "${src}/.git" ]; then
+		die "object missing for ${mode}: ${obj} (source missing: ${src})"
+	fi
+	log "object missing for ${mode}; building from ${src}"
+	if ! "${SCRIPT_DIR}/build-katran-host.sh" --src "${src}" >"${RUN_DIR}/logs-host/katran-host-build-${mode}.log" 2>&1; then
+		die "katran host build failed for ${mode}; see ${RUN_DIR}/logs-host/katran-host-build-${mode}.log"
+	fi
+	default_obj="${src}/build/katran/lib/bpf/balancer.bpf.o"
+	if [ ! -f "${obj}" ] && [ -f "${default_obj}" ] && [ "${obj}" != "${default_obj}" ]; then
+		mkdir -p "$(dirname -- "${obj}")"
+		cp -f "${default_obj}" "${obj}"
+	fi
+	[ -f "${obj}" ] || die "object still missing for ${mode}: ${obj}"
+}
+
+ensure_katran_obj_for_mode "${MODE}"
+
+ACTIVE_KATRAN_OBJ="$(obj_for_mode "${MODE}")"
+ACTIVE_KATRAN_OBJ_VM=""
+if [ -n "${ACTIVE_KATRAN_OBJ}" ]; then
+	ACTIVE_KATRAN_OBJ_VM="$(to_vm_repo_path "${ACTIVE_KATRAN_OBJ}" || true)"
+	[ -n "${ACTIVE_KATRAN_OBJ_VM}" ] || die "cannot map object path to VM repo path: ${ACTIVE_KATRAN_OBJ}"
+fi
 
 {
 	echo "run_id=${RUN_ID}"
@@ -159,6 +242,12 @@ ensure_katran_obj_for_mode
 	echo "label=${LABEL}"
 	echo "timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 	echo "katran_xdp_sec=${KATRAN_XDP_SEC}"
+	echo "katran_src=${KATRAN_SRC}"
+	echo "katran_oracle_src=${KATRAN_ORACLE_SRC}"
+	echo "katran_orig_obj=${KATRAN_ORIG_OBJ}"
+	echo "katran_oracle_obj=${KATRAN_ORACLE_OBJ}"
+	echo "active_katran_obj=${ACTIVE_KATRAN_OBJ}"
+	echo "active_katran_obj_vm=${ACTIVE_KATRAN_OBJ_VM}"
 	echo "results_dir=${RESULTS_DIR}"
 } >"${RUN_DIR}/meta.env"
 
@@ -177,10 +266,14 @@ if [ "${NO_VM_SETUP}" -eq 0 ]; then
 fi
 
 log "applying mode ${MODE} on VM1"
+MODE_CMD="/linux-dev-env/scripts/katran/vm1-run-mode.sh --mode ${MODE} --vip ${VIP} --vip-port ${VIP_PORT}"
+if [ -n "${ACTIVE_KATRAN_OBJ_VM}" ]; then
+	MODE_CMD="${MODE_CMD} --bpf-obj ${ACTIVE_KATRAN_OBJ_VM}"
+fi
 if [ -n "${KATRAN_XDP_SEC}" ]; then
-	ssh_vm vm1 "KATRAN_XDP_SEC=${KATRAN_XDP_SEC} /linux-dev-env/scripts/katran/vm1-run-mode.sh --mode ${MODE} --vip ${VIP} --vip-port ${VIP_PORT}" >"${RUN_DIR}/logs-vm1/mode.log" 2>&1
+	ssh_vm vm1 "KATRAN_XDP_SEC=${KATRAN_XDP_SEC} ${MODE_CMD}" >"${RUN_DIR}/logs-vm1/mode.log" 2>&1
 else
-	ssh_vm vm1 "/linux-dev-env/scripts/katran/vm1-run-mode.sh --mode ${MODE} --vip ${VIP} --vip-port ${VIP_PORT}" >"${RUN_DIR}/logs-vm1/mode.log" 2>&1
+	ssh_vm vm1 "${MODE_CMD}" >"${RUN_DIR}/logs-vm1/mode.log" 2>&1
 fi
 
 REMOTE_WORKLOAD_OUT="/tmp/katran-workload-${RUN_ID}.txt"
@@ -223,6 +316,7 @@ fi
 	echo "- rate_pps: ${RATE_PPS}"
 	echo "- duration_secs: ${DURATION_SECS}"
 	echo "- measured_pps: ${MEASURED_PPS}"
+	echo "- active_katran_obj: ${ACTIVE_KATRAN_OBJ}"
 	echo
 	echo "## pktgen Result"
 	echo

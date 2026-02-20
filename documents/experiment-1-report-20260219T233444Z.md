@@ -88,4 +88,4 @@ What this result reflects:
 - Suite summary: `results/experiments/20260219T233444Z-katran-suite/suite-summary.md`
 - Suite medians: `results/experiments/20260219T233444Z-katran-suite/suite-medians.csv`
 - Plots: `results/experiments/20260219T233444Z-katran-suite/plots/throughput-vs-rate.png`
-- Plan reference: `documents/katran-experiment-plan.md`
+- Plan reference: `documents/experiment-1.md`

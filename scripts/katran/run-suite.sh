@@ -13,15 +13,18 @@ REPEATS=3
 LABEL="katran-suite"
 CONTINUE_ON_ERROR=0
 NO_PLOT=0
+NO_VM_START=0
+NO_VM_SETUP=0
 INTERACTIVE_PROGRESS=0
 PROGRESS_INTERVAL_SECS=1
 PROGRESS_FD=1
+RESULTS_DIR="${ROOT_DIR}/results/experiments"
 
 usage() {
 	cat <<USAGE
 Usage: $(basename "$0") [options]
 
-Run full mode/rate matrix and store suite artifacts under results/experiments.
+Run full mode/rate matrix and store suite artifacts under <results-dir>.
 
 Options:
   --modes "m1 m2"       Modes list (default: ${MODES})
@@ -29,6 +32,9 @@ Options:
   --duration <sec>       Duration per run (default: ${DURATION_SECS})
   --repeats <n>          Repeats per (mode,rate) (default: ${REPEATS})
   --label <text>         Suite label (default: ${LABEL})
+  --results-dir <path>   Parent directory for suite folders (default: ${RESULTS_DIR})
+  --no-vm-start          Pass --no-vm-start to each case run
+  --no-vm-setup          Pass --no-vm-setup to each case run
   --continue-on-error    Keep running next case after failure
   --progress-interval <n>  Progress refresh interval in seconds (default: ${PROGRESS_INTERVAL_SECS})
   --no-plot              Skip plot generation
@@ -63,6 +69,19 @@ while [ $# -gt 0 ]; do
 			LABEL="$2"
 			shift 2
 			;;
+		--results-dir)
+			[ $# -gt 1 ] || die "--results-dir requires value"
+			RESULTS_DIR="$2"
+			shift 2
+			;;
+		--no-vm-start)
+			NO_VM_START=1
+			shift
+			;;
+		--no-vm-setup)
+			NO_VM_SETUP=1
+			shift
+			;;
 		--continue-on-error)
 			CONTINUE_ON_ERROR=1
 			shift
@@ -86,12 +105,8 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-# Prefer writing progress to the controlling terminal so updates stay one-line
-# even if stdout is wrapped by tools like make/IDE integrations.
-if exec 3>/dev/tty 2>/dev/null; then
-	PROGRESS_FD=3
-	INTERACTIVE_PROGRESS=1
-elif [ -t 1 ]; then
+# One-line progress is enabled only when stdout is a TTY.
+if [ -t 1 ]; then
 	PROGRESS_FD=1
 	INTERACTIVE_PROGRESS=1
 fi
@@ -113,6 +128,13 @@ case "${PROGRESS_INTERVAL_SECS}" in
 	*) ;;
 esac
 [ "${PROGRESS_INTERVAL_SECS}" -ge 1 ] || die "--progress-interval must be >= 1"
+
+resolve_path() {
+	case "$1" in
+		/*) printf "%s\n" "$1" ;;
+		*) printf "%s/%s\n" "${ROOT_DIR}" "$1" ;;
+	esac
+}
 
 fmt_secs() {
 	local total="$1"
@@ -252,8 +274,11 @@ RATE_COUNT="$(echo "${RATES}" | awk '{print NF}')"
 TOTAL_CASES=$((MODE_COUNT * RATE_COUNT * REPEATS))
 [ "${TOTAL_CASES}" -gt 0 ] || die "no cases to run"
 
+RESULTS_DIR="$(resolve_path "${RESULTS_DIR}")"
+mkdir -p "${RESULTS_DIR}"
+
 SUITE_ID="$(new_run_id "${LABEL}")"
-SUITE_DIR="${ROOT_DIR}/results/experiments/${SUITE_ID}"
+SUITE_DIR="${RESULTS_DIR}/${SUITE_ID}"
 SUITE_RUNS_DIR="${SUITE_DIR}/runs"
 SUITE_CASE_LOGS_DIR="${SUITE_DIR}/logs-cases"
 mkdir -p "${SUITE_DIR}" "${SUITE_RUNS_DIR}" "${SUITE_CASE_LOGS_DIR}"
@@ -285,7 +310,14 @@ for mode in ${MODES}; do
 			measured_pps=""
 
 			render_progress "running" "${mode}" "${rate}" "${rep}"
-			"${SCRIPT_DIR}/run-experiment.sh" --mode "${mode}" --rate-pps "${rate}" --duration "${DURATION_SECS}" --label "${case_label}" --results-dir "${SUITE_RUNS_DIR}" >"${case_log}" 2>&1 &
+			run_args=(--mode "${mode}" --rate-pps "${rate}" --duration "${DURATION_SECS}" --label "${case_label}" --results-dir "${SUITE_RUNS_DIR}")
+			if [ "${NO_VM_START}" -eq 1 ]; then
+				run_args+=(--no-vm-start)
+			fi
+			if [ "${NO_VM_SETUP}" -eq 1 ]; then
+				run_args+=(--no-vm-setup)
+			fi
+			"${SCRIPT_DIR}/run-experiment.sh" "${run_args[@]}" >"${case_log}" 2>&1 &
 			case_pid=$!
 			if [ "${INTERACTIVE_PROGRESS}" -eq 1 ]; then
 				last_progress_epoch="$(date +%s)"

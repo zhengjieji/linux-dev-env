@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+EXP2_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./common.sh
+source "${EXP2_DIR}/common.sh"
+
+THROUGHPUT_ROOT="${EXP2_MEASURE_THROUGHPUT_ROOT_DEFAULT}"
+LATENCY_ROOT="${EXP2_MEASURE_LATENCY_ROOT_DEFAULT}"
+OUT_ROOT="${EXP2_ANALYSIS_ROOT_DEFAULT}"
+THROUGHPUT_SUITE_DIR=""
+LATENCY_SUITE_DIR=""
+
+usage() {
+	cat <<USAGE
+Usage: $(basename "$0") [options]
+
+Analyze Exp2 outputs and produce merged summaries.
+
+Options:
+  --throughput-root <path>    Throughput suites root (default: ${THROUGHPUT_ROOT})
+  --latency-root <path>       Latency suites root (default: ${LATENCY_ROOT})
+  --throughput-suite <path>   Explicit throughput suite dir
+  --latency-suite <path>      Explicit latency suite dir
+  --out-root <path>           Analysis output root (default: ${OUT_ROOT})
+  -h, --help                  Show this help
+USAGE
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--throughput-root)
+			[ $# -gt 1 ] || exp2_die "--throughput-root requires value"
+			THROUGHPUT_ROOT="$2"
+			shift 2
+			;;
+		--latency-root)
+			[ $# -gt 1 ] || exp2_die "--latency-root requires value"
+			LATENCY_ROOT="$2"
+			shift 2
+			;;
+		--throughput-suite)
+			[ $# -gt 1 ] || exp2_die "--throughput-suite requires value"
+			THROUGHPUT_SUITE_DIR="$2"
+			shift 2
+			;;
+		--latency-suite)
+			[ $# -gt 1 ] || exp2_die "--latency-suite requires value"
+			LATENCY_SUITE_DIR="$2"
+			shift 2
+			;;
+		--out-root)
+			[ $# -gt 1 ] || exp2_die "--out-root requires value"
+			OUT_ROOT="$2"
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			exp2_die "unknown option: $1"
+			;;
+	esac
+done
+
+THROUGHPUT_ROOT="$(resolve_path_exp2 "${THROUGHPUT_ROOT}")"
+LATENCY_ROOT="$(resolve_path_exp2 "${LATENCY_ROOT}")"
+OUT_ROOT="$(resolve_path_exp2 "${OUT_ROOT}")"
+mkdir -p "${OUT_ROOT}"
+
+latest_dir_with_file() {
+	local root="$1"
+	local marker="$2"
+	local d
+	for d in $(ls -1dt "${root}"/* 2>/dev/null || true); do
+		if [ -f "${d}/${marker}" ]; then
+			printf "%s\n" "${d}"
+			return 0
+		fi
+	done
+	return 1
+}
+
+if [ -z "${THROUGHPUT_SUITE_DIR}" ]; then
+	THROUGHPUT_SUITE_DIR="$(latest_dir_with_file "${THROUGHPUT_ROOT}" "suite-index.csv" || true)"
+fi
+if [ -n "${THROUGHPUT_SUITE_DIR}" ]; then
+	THROUGHPUT_SUITE_DIR="$(resolve_path_exp2 "${THROUGHPUT_SUITE_DIR}")"
+fi
+
+if [ -z "${LATENCY_SUITE_DIR}" ]; then
+	LATENCY_SUITE_DIR="$(latest_dir_with_file "${LATENCY_ROOT}" "latency-index.csv" || true)"
+fi
+if [ -n "${LATENCY_SUITE_DIR}" ]; then
+	LATENCY_SUITE_DIR="$(resolve_path_exp2 "${LATENCY_SUITE_DIR}")"
+fi
+
+[ -n "${THROUGHPUT_SUITE_DIR}" ] || exp2_die "throughput suite not found"
+INDEX_CSV="${THROUGHPUT_SUITE_DIR}/suite-index.csv"
+assert_file "${INDEX_CSV}"
+
+RUN_ID="$(new_exp2_id analysis)"
+RUN_DIR="${OUT_ROOT}/${RUN_ID}"
+mkdir -p "${RUN_DIR}"
+
+cp -f "${INDEX_CSV}" "${RUN_DIR}/throughput-index.csv"
+
+{
+	echo "mode,rate_pps,repeat,status,measured_pps,loss_pps,loss_rate"
+	awk -F, 'NR>1 {offered=$2+0; measured=$5+0; if (measured<0) measured=0; loss=offered-measured; if (loss<0) loss=0; lr=(offered>0?loss/offered:0); printf "%s,%s,%s,%s,%s,%.0f,%.6f\n", $1,$2,$3,$4,$5,loss,lr}' "${INDEX_CSV}"
+} >"${RUN_DIR}/loss-index.csv"
+
+{
+	echo "mode,rate_pps,samples,median_pps,median_loss_rate"
+	awk -F, 'NR>1 && $4=="ok" && $5 ~ /^[0-9]+([.][0-9]+)?$/ {print $1 "," $2 "," $5}' "${INDEX_CSV}" | sort -t, -k1,1 -k2,2n -k3,3n | awk -F, '
+	{
+		key=$1 FS $2
+		vals[key,++n[key]]=$3
+	}
+	END {
+		for (k in n) {
+			split(k,a,FS)
+			m=n[k]
+			if (m%2==1) med=vals[k,(m+1)/2]; else med=(vals[k,m/2]+vals[k,m/2+1])/2
+			loss=(a[2]-med)
+			if (loss<0) loss=0
+			lr=(a[2]>0?loss/a[2]:0)
+			printf "%s,%s,%d,%.3f,%.6f\n", a[1],a[2],m,med,lr
+		}
+	}' | sort -t, -k1,1 -k2,2n
+} >"${RUN_DIR}/throughput-loss-medians.csv"
+
+latency_index=""
+if [ -n "${LATENCY_SUITE_DIR}" ] && [ -f "${LATENCY_SUITE_DIR}/latency-index.csv" ]; then
+	latency_index="${LATENCY_SUITE_DIR}/latency-index.csv"
+	cp -f "${latency_index}" "${RUN_DIR}/latency-index.csv"
+fi
+
+{
+	echo "# Exp2 Analysis Summary"
+	echo
+	echo "- analysis_id: ${RUN_ID}"
+	echo "- throughput_suite: ${THROUGHPUT_SUITE_DIR}"
+	echo "- throughput_index: ${INDEX_CSV}"
+	echo "- throughput_loss_medians_csv: ${RUN_DIR}/throughput-loss-medians.csv"
+	if [ -n "${latency_index}" ]; then
+		echo "- latency_suite: ${LATENCY_SUITE_DIR}"
+		echo "- latency_index: ${latency_index}"
+	else
+		echo "- latency_suite: (not found)"
+	fi
+	echo
+	echo "## High-Load (600k-1000k) Median Throughput"
+	echo
+	echo '```csv'
+	awk -F, 'NR==1 || ($2+0)>=600000' "${RUN_DIR}/throughput-loss-medians.csv"
+	echo '```'
+} >"${RUN_DIR}/summary.md"
+
+exp2_log "analysis complete: ${RUN_DIR}"
+echo "RUN_DIR=${RUN_DIR}"
