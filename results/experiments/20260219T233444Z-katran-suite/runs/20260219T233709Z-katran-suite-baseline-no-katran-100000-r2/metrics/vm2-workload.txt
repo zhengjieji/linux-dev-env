@@ -1,0 +1,20 @@
+Params: count 3000000  min_pkt_size: 64  max_pkt_size: 64
+     frags: 0  delay: 10000  clone_skb: 0  ifname: eth1
+     flows: 0 flowlen: 0
+     queue_map_min: 0  queue_map_max: 0
+     dst_min: 192.168.100.100  dst_max: 
+     src_min:   src_max: 
+     src_mac: 52:54:00:aa:00:22 dst_mac: 52:54:00:aa:00:11
+     udp_src_min: 1025  udp_src_max: 65535  udp_dst_min: 80  udp_dst_max: 80
+     src_mac_count: 0  dst_mac_count: 0
+     Flags: SHARED  
+Current:
+     pkts-sofar: 3000000  errors: 0
+     started: 2248460045us  stopped: 2278460030us idle: 24246804us
+     seq_num: 3000001  cur_dst_mac_offset: 0  cur_src_mac_offset: 0
+     cur_saddr: 192.168.100.2  cur_daddr: 192.168.100.100
+     cur_udp_dst: 80  cur_udp_src: 33565
+     cur_queue_map: 0
+     flows: 0
+Result: OK: 29999985(c5753181+d24246804) usec, 3000000 (64byte,0frags)
+  100000pps 51Mb/sec (51200000bps) errors: 0

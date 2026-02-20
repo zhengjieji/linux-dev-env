@@ -1,0 +1,45 @@
+timestamp=2026-02-19T23:56:07Z
+data_iface=eth1
+
+[ip-brief]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+dummy0           DOWN           
+eth0             UP             10.0.2.15/24 fec0::5054:ff:fe12:3456/64 fe80::5054:ff:fe12:3456/64 
+eth1             UP             192.168.100.2/24 
+sit0@NONE        DOWN           
+
+[iface-counters]
+4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:aa:00:22 brd ff:ff:ff:ff:ff:ff
+    RX:   bytes   packets errors dropped  missed   mcast           
+            656         8      0       0       0       0 
+    TX:   bytes   packets errors dropped carrier collsns           
+    31299200270 489050003      0       0       0       0 
+
+[softnet-stat]
+00000008 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+0000289c 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000002 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000003 00000000 00000000
+
+[workload-output]
+Params: count 18000000  min_pkt_size: 64  max_pkt_size: 64
+     frags: 0  delay: 1666  clone_skb: 0  ifname: eth1
+     flows: 0 flowlen: 0
+     queue_map_min: 0  queue_map_max: 0
+     dst_min: 192.168.100.100  dst_max: 
+     src_min:   src_max: 
+     src_mac: 52:54:00:aa:00:22 dst_mac: 52:54:00:aa:00:11
+     udp_src_min: 1025  udp_src_max: 65535  udp_dst_min: 80  udp_dst_max: 80
+     src_mac_count: 0  dst_mac_count: 0
+     Flags: SHARED  
+Current:
+     pkts-sofar: 18000000  errors: 0
+     started: 3348980067us  stopped: 3380998939us idle: 1019us
+     seq_num: 18000001  cur_dst_mac_offset: 0  cur_src_mac_offset: 0
+     cur_saddr: 192.168.100.2  cur_daddr: 192.168.100.100
+     cur_udp_dst: 80  cur_udp_src: 2735
+     cur_queue_map: 0
+     flows: 0
+Result: OK: 32018872(c32017853+d1019) usec, 18000000 (64byte,0frags)
+  562168pps 287Mb/sec (287830016bps) errors: 0

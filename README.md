@@ -63,7 +63,7 @@ It does:
 ./scripts/switch-kernel.sh --tag v6.18 --force-save
 ```
 
-#### Push Repo to GitHub Branch `dual-vm` (Exclude `linux/`)
+#### Push Repo to GitHub Branch `katran-exp` (Exclude `linux/`)
 
 ```sh
 ./scripts/push-github.sh
@@ -72,8 +72,9 @@ It does:
 This script:
 - ensures `linux/` is ignored and never staged
 - commits local changes (if any)
-- pushes `HEAD` to `origin/dual-vm`
-- creates local branch `dual-vm` if missing
+- pushes `HEAD` to `origin/katran-exp` by default
+- first run: creates local `katran-exp` from base `dual-vm` (or `origin/dual-vm`)
+- supports override via `--branch` and `--base-branch`
 
 When you run kernel build targets (`vmlinux`, `kernel`, `headers-install`, `modules-install`),
 the pipeline now auto-creates a checkpoint if tracked files in `linux/` changed.
@@ -196,3 +197,76 @@ You must modify the q-script to connect the DOCKER_PORT to a QEMU_PORT.
 In the q-script you must append a new rule.
 Find the line that starts with `"net += -netdev user..."`.
 Then at the end of the line add the text ```"hostfwd=tcp::DOCKER_PORT-:QEMU_PORT"```
+
+## Katran Experiments
+
+Experiment plan document:
+
+```sh
+cat documents/katran-experiment-plan.md
+```
+
+Clone Katran source into `source/katran` and build `balancer.bpf.o` on host:
+
+```sh
+make katran-clone
+
+# optional ref pin
+scripts/katran/clone-katran.sh --ref <tag-or-commit>
+
+# clone/update only (skip host build)
+scripts/katran/clone-katran.sh --skip-build
+
+# manual rebuild of host object
+make katran-build-host
+```
+
+Per-VM setup scripts:
+
+```sh
+# from host into vm1
+make katran-vm1-setup
+
+# from host into vm2
+make katran-vm2-setup
+```
+
+Run one experiment:
+
+```sh
+make katran-exp-one KATRAN_MODE=baseline-no-katran KATRAN_RATE_PPS=200000 KATRAN_DURATION_SECS=30
+make katran-exp-one KATRAN_MODE=katran-orig-bpf KATRAN_RATE_PPS=200000 KATRAN_DURATION_SECS=30
+```
+
+Run full suite:
+
+```sh
+make katran-exp-suite
+# custom matrix
+scripts/katran/run-suite.sh --modes "baseline-no-katran katran-orig-bpf" --rates "$(seq 50000 50000 1000000)" --repeats 3 --duration 30
+```
+During suite runs, host console shows one-line progress with ETA.
+Plots are refreshed automatically during and after suite execution under `results/experiments/<suite-id>/plots/`.
+The throughput plot includes standard-deviation (stdev) error bars per mode/rate when repeats > 1.
+If gnuplot is missing, install it in user space (no sudo):
+
+```sh
+make katran-install-plot-tool
+```
+
+Regenerate plots manually (this also auto-installs user-space gnuplot when needed):
+
+```sh
+make katran-plot-suite
+make katran-plot-suite KATRAN_SUITE_DIR=results/experiments/<suite-id>
+```
+
+Results layout:
+
+- one-off run: `results/experiments/<run-id>/`
+- suite run root: `results/experiments/<suite-id>/`
+- suite case runs: `results/experiments/<suite-id>/runs/<run-id>/`
+- suite case logs: `results/experiments/<suite-id>/logs-cases/*.log`
+- suite artifacts: `suite-index.csv`, `suite-medians.csv`, `suite-summary.md`, `plots/throughput-vs-rate.png`, `plots/throughput-vs-rate.svg`
+
+Each run directory stores host/vm logs, raw metrics, `summary.csv`, and `summary.md`.

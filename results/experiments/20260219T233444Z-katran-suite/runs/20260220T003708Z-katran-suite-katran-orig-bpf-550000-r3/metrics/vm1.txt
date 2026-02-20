@@ -1,0 +1,48 @@
+timestamp=2026-02-20T00:37:42Z
+mode=katran-orig-bpf
+data_iface=eth1
+
+[uname]
+Linux q 6.18.0 #7 SMP PREEMPT_DYNAMIC Thu Feb 19 04:30:47 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+[ip-brief]
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+dummy0           DOWN           
+eth0             UP             10.0.2.15/24 fec0::5054:ff:fe12:3456/64 fe80::5054:ff:fe12:3456/64 
+eth1             UP             192.168.100.1/24 
+sit0@NONE        DOWN           
+vip0             UNKNOWN        192.168.100.100/32 
+veth-rs1@if3     UP             10.200.1.1/24 fe80::7439:21ff:fe11:e0b3/64 
+veth-rs2@if3     UP             10.200.2.1/24 fe80::9802:e3ff:fecc:bfea/64 
+
+[ipvs-stats]
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port               Conns   InPkts  OutPkts  InBytes OutBytes
+  -> RemoteAddress:Port
+UDP  192.168.100.100:80                  0 15965337        0  798266K        0
+  -> 10.200.1.2:8080                     0  7982668        0  399133K        0
+  -> 10.200.2.2:8080                     0  7982669        0  399133K        0
+
+[iface-counters]
+4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdpgeneric qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:aa:00:11 brd ff:ff:ff:ff:ff:ff
+    prog/xdp id 1186 name balancer_ingres tag b3f57c9e176009ef jited 
+    RX:   bytes    packets errors dropped  missed   mcast           
+    89395516206 1396804935      0       0       0       0 
+    TX:   bytes    packets errors dropped carrier collsns           
+            270          3      0       0       0       0 
+
+[bpftool-net]
+xdp:
+eth1(4) generic id 1186
+
+tc:
+
+flow_dissector:
+
+netfilter:
+
+1186: xdp  name balancer_ingress  tag b3f57c9e176009ef  gpl
+	loaded_at 2026-02-20T00:37:11+0000  uid 0
+	xlated 23256B  jited 13302B  memlock 24576B  map_ids 1197,1199,1202,1200,1208,1213,1204,1215,1198,1205,1203,1207,1206,1211
+	btf_id 1569

@@ -1,0 +1,2 @@
+run_id,mode,rate_pps,duration_secs,measured_pps,result_line
+20260219T234842Z-katran-suite-baseline-no-katran-400000-r3,baseline-no-katran,400000,30,399999,"Result: OK: 30000006(c11163050+d18836955) usec, 12000000 (64byte,0frags)"

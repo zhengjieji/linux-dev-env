@@ -1,0 +1,2 @@
+run_id,mode,rate_pps,duration_secs,measured_pps,result_line
+20260220T003903Z-katran-suite-katran-orig-bpf-600000-r3,katran-orig-bpf,600000,30,583567,"Result: OK: 30844765(c30844359+d405) usec, 18000000 (64byte,0frags)"

@@ -6,8 +6,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 REMOTE="origin"
-BRANCH="dual-vm"
-COMMIT_MESSAGE="chore: update dual-vm"
+BRANCH="katran-exp"
+BASE_BRANCH="dual-vm"
+COMMIT_MESSAGE="chore: update katran-exp"
 FORCE_WITH_LEASE=0
 
 log() {
@@ -24,18 +25,20 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Commit local changes (excluding linux/) and push to remote branch '${BRANCH}'.
-If the local branch does not exist yet, it is created.
+If '${BRANCH}' does not exist locally yet, create it from base branch '${BASE_BRANCH}'
+(or '${REMOTE}/${BASE_BRANCH}' if only remote exists).
 
 Options:
   --remote <name>         Git remote name (default: ${REMOTE})
   --branch <name>         Branch name to push (default: ${BRANCH})
+  --base-branch <name>    Base branch used on first-time branch creation (default: ${BASE_BRANCH})
   --message <text>        Commit message for staged changes
   --force-with-lease      Push with --force-with-lease
   -h, --help              Show this help
 
-Example:
+Examples:
   $(basename "$0")
-  $(basename "$0") --branch dual-vm --message "sync repo"
+  $(basename "$0") --branch katran-exp --base-branch dual-vm --message "sync katran experiments"
 EOF
 }
 
@@ -54,6 +57,11 @@ parse_args() {
 			--branch)
 				[ $# -gt 1 ] || die "--branch requires a value"
 				BRANCH="$2"
+				shift 2
+				;;
+			--base-branch)
+				[ $# -gt 1 ] || die "--base-branch requires a value"
+				BASE_BRANCH="$2"
 				shift 2
 				;;
 			--message)
@@ -124,12 +132,31 @@ commit_if_needed() {
 	git -C "${ROOT_DIR}" commit -m "${COMMIT_MESSAGE}"
 }
 
+find_base_ref() {
+	if git -C "${ROOT_DIR}" show-ref --verify --quiet "refs/heads/${BASE_BRANCH}"; then
+		echo "${BASE_BRANCH}"
+		return 0
+	fi
+	if git -C "${ROOT_DIR}" show-ref --verify --quiet "refs/remotes/${REMOTE}/${BASE_BRANCH}"; then
+		echo "${REMOTE}/${BASE_BRANCH}"
+		return 0
+	fi
+	return 1
+}
+
 ensure_local_branch() {
 	if git -C "${ROOT_DIR}" show-ref --verify --quiet "refs/heads/${BRANCH}"; then
 		return 0
 	fi
-	git -C "${ROOT_DIR}" branch "${BRANCH}" HEAD
-	log "created local branch '${BRANCH}'"
+
+	local base_ref
+	if base_ref="$(find_base_ref)"; then
+		git -C "${ROOT_DIR}" branch "${BRANCH}" "${base_ref}"
+		log "created local branch '${BRANCH}' from '${base_ref}'"
+	else
+		git -C "${ROOT_DIR}" branch "${BRANCH}" HEAD
+		log "created local branch '${BRANCH}' from current HEAD (base '${BASE_BRANCH}' not found)"
+	fi
 }
 
 push_branch() {

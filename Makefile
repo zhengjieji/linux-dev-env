@@ -12,6 +12,14 @@ DUAL_VM2_SSH_PORT ?= "53122"
 DUAL_VM2_NET_PORT ?= "53123"
 DUAL_VM2_GDB_PORT ?= "1312"
 KTRACK ?= ${BASE_PROJ}/tools/kernel-track/ktrack.sh
+KATRAN_SCRIPT_DIR ?= ${BASE_PROJ}/scripts/katran
+KATRAN_MODE ?= baseline-no-katran
+KATRAN_RATE_PPS ?= 200000
+KATRAN_DURATION_SECS ?= 30
+KATRAN_REPEATS ?= 3
+KATRAN_RATES ?= 50000 100000 150000 200000 250000 300000 350000 400000 450000 500000 550000 600000 650000 700000 750000 800000 850000 900000 950000 1000000
+KATRAN_PROGRESS_INTERVAL ?= 1
+KATRAN_SUITE_DIR ?=
 .ALWAYS:
 
 all: vmlinux
@@ -119,3 +127,37 @@ test-vm-dev:
 
 test:
 	./tests/run.sh
+
+katran-clone:
+	${KATRAN_SCRIPT_DIR}/clone-katran.sh --runtime-image ${RUNTIME_IMAGE}
+
+katran-build-host:
+	${KATRAN_SCRIPT_DIR}/build-katran-host.sh --runtime-image ${RUNTIME_IMAGE}
+
+katran-vm1-setup:
+	${DUAL_VM_SCRIPT} ssh vm1 /linux-dev-env/scripts/katran/vm1-setup.sh
+
+katran-vm2-setup:
+	${DUAL_VM_SCRIPT} ssh vm2 /linux-dev-env/scripts/katran/vm2-setup.sh
+
+katran-exp-one:
+	RUNTIME_IMAGE=${RUNTIME_IMAGE} \
+	DUAL_VM1_SSH_PORT=${DUAL_VM1_SSH_PORT} DUAL_VM1_NET_PORT=${DUAL_VM1_NET_PORT} DUAL_VM1_GDB_PORT=${DUAL_VM1_GDB_PORT} \
+	DUAL_VM2_SSH_PORT=${DUAL_VM2_SSH_PORT} DUAL_VM2_NET_PORT=${DUAL_VM2_NET_PORT} DUAL_VM2_GDB_PORT=${DUAL_VM2_GDB_PORT} \
+	${KATRAN_SCRIPT_DIR}/run-experiment.sh --mode ${KATRAN_MODE} --rate-pps ${KATRAN_RATE_PPS} --duration ${KATRAN_DURATION_SECS}
+
+katran-exp-suite:
+	RUNTIME_IMAGE=${RUNTIME_IMAGE} \
+	DUAL_VM1_SSH_PORT=${DUAL_VM1_SSH_PORT} DUAL_VM1_NET_PORT=${DUAL_VM1_NET_PORT} DUAL_VM1_GDB_PORT=${DUAL_VM1_GDB_PORT} \
+	DUAL_VM2_SSH_PORT=${DUAL_VM2_SSH_PORT} DUAL_VM2_NET_PORT=${DUAL_VM2_NET_PORT} DUAL_VM2_GDB_PORT=${DUAL_VM2_GDB_PORT} \
+	${KATRAN_SCRIPT_DIR}/run-suite.sh --rates "${KATRAN_RATES}" --repeats ${KATRAN_REPEATS} --duration ${KATRAN_DURATION_SECS} --progress-interval ${KATRAN_PROGRESS_INTERVAL}
+
+katran-install-plot-tool:
+	${KATRAN_SCRIPT_DIR}/install-gnuplot-user.sh
+
+katran-plot-suite:
+	if [ -n "${KATRAN_SUITE_DIR}" ]; then \
+		${KATRAN_SCRIPT_DIR}/plot-suite.sh --install-gnuplot-user --suite-dir ${KATRAN_SUITE_DIR}; \
+	else \
+		${KATRAN_SCRIPT_DIR}/plot-suite.sh --install-gnuplot-user; \
+	fi
