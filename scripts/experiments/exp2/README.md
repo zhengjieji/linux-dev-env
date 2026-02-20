@@ -10,7 +10,7 @@ Implemented scripts:
 - `test-smoke.sh`: functional gate (baseline/orig/oracle short runs).
 - `discovery.sh`: map snapshot/hash discovery run.
 - `run-throughput.sh`: throughput/loss suite for baseline/orig/oracle.
-- `run-latency.sh`: under-load RTT proxy suite (ICMP while traffic runs) with one-line progress/ETA.
+- `run-latency.sh`: under-load RTT proxy suite (ICMP while traffic runs) with one-line progress/ETA, defaulting to the same rate matrix as throughput.
 - `analyze.sh`: merge throughput/loss(+latency) summaries.
 - `plot.sh`: generate Exp2 plots (throughput/loss and latency if available).
 - `run-all.sh`: end-to-end Exp2 pipeline.

@@ -190,6 +190,10 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+if [ -n "${TP_RATES}" ] && [ -z "${LAT_RATES}" ]; then
+	LAT_RATES="${TP_RATES}"
+fi
+
 STARTED_VMS_BY_SCRIPT=0
 
 cleanup_dual_vms() {

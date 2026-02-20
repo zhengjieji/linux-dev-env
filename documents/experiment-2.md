@@ -211,7 +211,7 @@ make exp2-plot
 - `exp2-test-smoke`: short baseline/orig/oracle execution gate before long runs.
 - `exp2-discovery`: runs intrusive map snapshot/hash collection for invariance candidates.
 - `exp2-run-throughput`: runs baseline/orig/oracle suite over offered pps matrix.
-- `exp2-run-latency`: runs under-load RTT proxy suite (ICMP sampling during load) with one-line progress/ETA.
+- `exp2-run-latency`: runs under-load RTT proxy suite (ICMP sampling during load) with one-line progress/ETA; by default it uses the same rate matrix as throughput.
 - `exp2-plot`: generates throughput/loss and latency plots from latest analysis output.
 - `exp2-analyze`: merges suite outputs and computes loss/median summaries.
 
