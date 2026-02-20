@@ -1,4 +1,0 @@
-Warning: Permanently added '[127.0.0.1]:53122' (ED25519) to the list of known hosts.
-[vm2-workload] iface=eth1 vip=192.168.100.100:80 rate_pps=250000 duration=30
-Result: OK: 30000001(c8964470+d21035531) usec, 7500000 (64byte,0frags)
-[vm2-workload] wrote /tmp/katran-workload-20260220T002438Z-katran-suite-katran-orig-bpf-250000-r1.txt

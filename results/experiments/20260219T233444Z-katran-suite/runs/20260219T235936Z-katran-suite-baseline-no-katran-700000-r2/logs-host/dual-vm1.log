@@ -1,9 +1,0 @@
-make[1]: Entering directory '/home/zhengjie/github/local/dual-vm'
-LINUX_DIR=/home/zhengjie/github/local/dual-vm/linux RUNTIME_IMAGE=zhengjie-dual-vm \
-DUAL_VM1_SSH_PORT=53022 DUAL_VM1_NET_PORT=53023 DUAL_VM1_GDB_PORT=1311 \
-DUAL_VM2_SSH_PORT=53122 DUAL_VM2_NET_PORT=53123 DUAL_VM2_GDB_PORT=1312 \
-/home/zhengjie/github/local/dual-vm/scripts/dual-vm.sh start vm1
-[dual-vm] started vm1; waiting for SSH on localhost:53022
-Warning: Permanently added '[127.0.0.1]:53022' (ED25519) to the list of known hosts.
-[dual-vm] vm1 is ready
-make[1]: Leaving directory '/home/zhengjie/github/local/dual-vm'

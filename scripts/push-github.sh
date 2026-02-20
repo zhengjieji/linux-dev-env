@@ -11,6 +11,13 @@ BASE_BRANCH="dual-vm"
 COMMIT_MESSAGE="chore: update katran-exp"
 FORCE_WITH_LEASE=0
 
+# Keep large/generated trees out of repo history.
+EXCLUDED_DIRS=(
+	"linux"
+	"source"
+	"results"
+)
+
 log() {
 	echo "[push-github] $*"
 }
@@ -21,10 +28,10 @@ die() {
 }
 
 usage() {
-	cat <<EOF
+	cat <<EOF_USAGE
 Usage: $(basename "$0") [options]
 
-Commit local changes (excluding linux/) and push to remote branch '${BRANCH}'.
+Commit local changes (excluding linux/, source/, results/) and push to remote branch '${BRANCH}'.
 If '${BRANCH}' does not exist locally yet, create it from base branch '${BASE_BRANCH}'
 (or '${REMOTE}/${BASE_BRANCH}' if only remote exists).
 
@@ -39,7 +46,7 @@ Options:
 Examples:
   $(basename "$0")
   $(basename "$0") --branch katran-exp --base-branch dual-vm --message "sync katran experiments"
-EOF
+EOF_USAGE
 }
 
 require_cmd() {
@@ -90,25 +97,70 @@ ensure_repo() {
 	git -C "${ROOT_DIR}" remote get-url "${REMOTE}" >/dev/null 2>&1 || die "git remote '${REMOTE}' not found"
 }
 
-ensure_linux_ignored() {
-	local gitignore="${ROOT_DIR}/.gitignore"
-	touch "${gitignore}"
-	if ! grep -qxF "linux/" "${gitignore}"; then
-		echo "linux/" >> "${gitignore}"
-		log "added 'linux/' to .gitignore"
-	fi
-
-	local tracked_linux
-	tracked_linux="$(git -C "${ROOT_DIR}" ls-files -- 'linux' 'linux/**')"
-	[ -z "${tracked_linux}" ] || die "linux/ is tracked by git; untrack it before pushing"
+build_exclude_specs() {
+	local specs=()
+	local dir
+	for dir in "${EXCLUDED_DIRS[@]}"; do
+		specs+=(":(exclude)${dir}")
+		specs+=(":(exclude)${dir}/**")
+	done
+	printf '%s\n' "${specs[@]}"
 }
 
-stage_changes_excluding_linux() {
-	git -C "${ROOT_DIR}" add -u -- . ':(exclude)linux' ':(exclude)linux/**'
+build_pathspecs() {
+	local specs=()
+	local dir
+	for dir in "${EXCLUDED_DIRS[@]}"; do
+		specs+=("${dir}")
+		specs+=("${dir}/**")
+	done
+	printf '%s\n' "${specs[@]}"
+}
+
+ensure_excluded_ignored() {
+	local gitignore="${ROOT_DIR}/.gitignore"
+	touch "${gitignore}"
+
+	local dir
+	for dir in "${EXCLUDED_DIRS[@]}"; do
+		if ! grep -qxF "${dir}/" "${gitignore}"; then
+			echo "${dir}/" >> "${gitignore}"
+			log "added '${dir}/' to .gitignore"
+		fi
+	done
+}
+
+untrack_excluded_paths() {
+	local pathspecs=()
+	while IFS= read -r line; do
+		[ -n "${line}" ] && pathspecs+=("${line}")
+	done < <(build_pathspecs)
+
+	local tracked_excluded
+	tracked_excluded="$(git -C "${ROOT_DIR}" ls-files -- "${pathspecs[@]}")"
+	if [ -z "${tracked_excluded}" ]; then
+		return 0
+	fi
+
+	log "tracked files detected under excluded dirs; untracking from git index (kept locally)"
+	local dir
+	for dir in "${EXCLUDED_DIRS[@]}"; do
+		git -C "${ROOT_DIR}" rm -r --cached --ignore-unmatch -- "${dir}" >/dev/null
+	done
+	log "untracked excluded dirs in index"
+}
+
+stage_changes_excluding_paths() {
+	local exclude_specs=()
+	while IFS= read -r line; do
+		[ -n "${line}" ] && exclude_specs+=("${line}")
+	done < <(build_exclude_specs)
+
+	git -C "${ROOT_DIR}" add -u -- . "${exclude_specs[@]}"
 
 	local untracked_tmp
 	untracked_tmp="$(mktemp "${TMPDIR:-/tmp}/push-github-untracked.XXXXXX")"
-	git -C "${ROOT_DIR}" ls-files --others --exclude-standard -z -- . ':(exclude)linux' ':(exclude)linux/**' > "${untracked_tmp}"
+	git -C "${ROOT_DIR}" ls-files --others --exclude-standard -z -- . "${exclude_specs[@]}" > "${untracked_tmp}"
 	if [ -s "${untracked_tmp}" ]; then
 		while IFS= read -r -d '' relpath; do
 			[ -n "${relpath}" ] || continue
@@ -117,9 +169,14 @@ stage_changes_excluding_linux() {
 	fi
 	rm -f "${untracked_tmp}"
 
-	local staged_linux
-	staged_linux="$(git -C "${ROOT_DIR}" diff --cached --name-only -- 'linux' 'linux/**')"
-	[ -z "${staged_linux}" ] || die "linux/ paths are staged unexpectedly"
+	local pathspecs=()
+	while IFS= read -r line; do
+		[ -n "${line}" ] && pathspecs+=("${line}")
+	done < <(build_pathspecs)
+
+	local staged_excluded_nondelete
+	staged_excluded_nondelete="$(git -C "${ROOT_DIR}" diff --cached --name-status -- "${pathspecs[@]}" | awk '$1 != "D" { print $0 }')"
+	[ -z "${staged_excluded_nondelete}" ] || die "excluded paths have non-deletion staged changes unexpectedly"
 }
 
 commit_if_needed() {
@@ -171,8 +228,9 @@ push_branch() {
 main() {
 	parse_args "$@"
 	ensure_repo
-	ensure_linux_ignored
-	stage_changes_excluding_linux
+	ensure_excluded_ignored
+	untrack_excluded_paths
+	stage_changes_excluding_paths
 	commit_if_needed
 	ensure_local_branch
 	push_branch

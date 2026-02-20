@@ -63,14 +63,15 @@ It does:
 ./scripts/switch-kernel.sh --tag v6.18 --force-save
 ```
 
-#### Push Repo to GitHub Branch `katran-exp` (Exclude `linux/`)
+#### Push Repo to GitHub Branch `katran-exp` (Exclude `linux/`, `source/`, `results/`)
 
 ```sh
 ./scripts/push-github.sh
 ```
 
 This script:
-- ensures `linux/` is ignored and never staged
+- ensures `linux/`, `source/`, and `results/` are ignored
+- auto-untracks those dirs from git index on first run (keeps local files)
 - commits local changes (if any)
 - pushes `HEAD` to `origin/katran-exp` by default
 - first run: creates local `katran-exp` from base `dual-vm` (or `origin/dual-vm`)
