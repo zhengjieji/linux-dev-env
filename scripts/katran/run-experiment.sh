@@ -178,6 +178,10 @@ RUN_ID="$(new_run_id "${LABEL}")"
 RUN_DIR="${RESULTS_DIR}/${RUN_ID}"
 mkdir -p "${RUN_DIR}/logs-host" "${RUN_DIR}/logs-vm1" "${RUN_DIR}/logs-vm2" "${RUN_DIR}/metrics"
 
+REMOTE_WORKLOAD_OUT="/tmp/katran-vm2-workload-${RUN_ID}.txt"
+REMOTE_VM1_COLLECT="/tmp/katran-vm1-metrics-${RUN_ID}.txt"
+REMOTE_VM2_COLLECT="/tmp/katran-vm2-metrics-${RUN_ID}.txt"
+
 obj_for_mode() {
 	case "$1" in
 		katran-orig-bpf) printf '%s\n' "${KATRAN_ORIG_OBJ}" ;;

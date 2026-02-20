@@ -90,7 +90,9 @@ if [ "${DRY_RUN}" -eq 1 ]; then
 fi
 
 "${EXP2_DIR}/precheck.sh" --require-vms >"${RUN_DIR}/precheck.log" 2>&1
-"${EXP2_DIR}/vm-setup.sh" --out-root "${RUN_DIR}/vm-setup" $( [ "${NO_VM_START}" -eq 1 ] && echo "--no-vm-start" ) >"${RUN_DIR}/vm-setup.log" 2>&1
+vm_setup_args=(--out-root "${RUN_DIR}/vm-setup")
+[ "${NO_VM_START}" -eq 1 ] && vm_setup_args+=(--no-vm-start)
+"${EXP2_DIR}/vm-setup.sh" "${vm_setup_args[@]}" >"${RUN_DIR}/vm-setup.log" 2>&1
 
 run_case() {
 	local mode="$1"

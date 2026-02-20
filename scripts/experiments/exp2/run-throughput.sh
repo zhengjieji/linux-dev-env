@@ -109,7 +109,11 @@ ORACLE_OBJ="$(resolve_path_exp2 "${ORACLE_OBJ}")"
 mkdir -p "${OUT_ROOT}"
 
 if [ "${DRY_RUN}" -eq 1 ]; then
-	echo "KATRAN_ORACLE_OBJ=${ORACLE_OBJ} ${ROOT_DIR}/scripts/katran/run-suite.sh --modes \"${MODES}\" --rates \"${RATES}\" --repeats ${REPEATS} --duration ${DURATION_SECS} --label ${LABEL} --progress-interval ${PROGRESS_INTERVAL} --results-dir ${OUT_ROOT} $( [ "${NO_VM_START}" -eq 1 ] && echo --no-vm-start ) $( [ "${NO_VM_SETUP}" -eq 1 ] && echo --no-vm-setup )"
+	dry_no_vm_start=""
+	dry_no_vm_setup=""
+	[ "${NO_VM_START}" -eq 1 ] && dry_no_vm_start=" --no-vm-start"
+	[ "${NO_VM_SETUP}" -eq 1 ] && dry_no_vm_setup=" --no-vm-setup"
+	echo "KATRAN_ORACLE_OBJ=${ORACLE_OBJ} ${ROOT_DIR}/scripts/katran/run-suite.sh --modes \"${MODES}\" --rates \"${RATES}\" --repeats ${REPEATS} --duration ${DURATION_SECS} --label ${LABEL} --progress-interval ${PROGRESS_INTERVAL} --results-dir ${OUT_ROOT}${dry_no_vm_start}${dry_no_vm_setup}"
 	exit 0
 fi
 

@@ -242,7 +242,11 @@ build_args=(--runtime-image "${RUNTIME_IMAGE}")
 if [ -n "${PATCH_FILE}" ]; then
 	build_args+=(--patch "${PATCH_FILE}")
 fi
-oracle_output="$(${EXP2_DIR}/build-oracle.sh "${build_args[@]}")"
+if ! oracle_output="$(${EXP2_DIR}/build-oracle.sh "${build_args[@]}" 2>&1)"; then
+	printf "%s\n" "${oracle_output}" >&2
+	exp2_die "build-oracle failed"
+fi
+printf "%s\n" "${oracle_output}"
 oracle_obj="$(printf '%s\n' "${oracle_output}" | awk -F= '/^ORACLE_OBJ=/{print $2}' | tail -n1)"
 [ -n "${oracle_obj}" ] || exp2_die "failed to get ORACLE_OBJ from build-oracle"
 
