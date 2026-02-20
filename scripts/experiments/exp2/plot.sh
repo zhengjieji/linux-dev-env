@@ -217,9 +217,9 @@ THROUGHPUT_STATS_RESULT_CSV="${OUT_DIR}/throughput-median-stdev-result.csv"
 LOSS_STATS_NNN_CSV="${OUT_DIR}/loss-median-nnnpps.csv"
 LOSS_STATS_RESULT_CSV="${OUT_DIR}/loss-median-result.csv"
 THROUGHPUT_SOURCE_SUMMARY_CSV="${OUT_DIR}/throughput-source-summary.csv"
-LAT_STATS_CSV="/latency-peak-time.csv"
-VM1_RX_STATS_CSV="/vm1-rx-pps-median-stdev.csv"
-BACKEND_DELIVERED_STATS_CSV="/backend-delivered-pps-median-stdev.csv"
+LAT_STATS_CSV="${OUT_DIR}/latency-peak-time.csv"
+VM1_RX_STATS_CSV="${OUT_DIR}/vm1-rx-pps-median-stdev.csv"
+BACKEND_DELIVERED_STATS_CSV="${OUT_DIR}/backend-delivered-pps-median-stdev.csv"
 
 # Backward-compatible aliases used in final logs.
 THROUGHPUT_STATS_CSV="${THROUGHPUT_STATS_NNN_CSV}"
@@ -437,6 +437,16 @@ plot ${lplot_expr}
 GNUPLOT
 	fi
 
+	info "[exp2-plot] wrote ${tp_png}"
+	info "[exp2-plot] wrote ${tp_svg}"
+	if [ -n "${lplot_expr}" ]; then
+		info "[exp2-plot] wrote ${loss_png}"
+		info "[exp2-plot] wrote ${loss_svg}"
+	fi
+	info "[exp2-plot] wrote ${throughput_stats_csv}"
+	info "[exp2-plot] wrote ${loss_stats_csv}"
+	return 0
+}
 
 plot_metric_from_index() {
 	# Args: metric_label index_col suffix y_label stats_csv
@@ -574,8 +584,6 @@ GNUPLOT
 	info "[exp2-plot] wrote ${stats_csv}"
 	return 0
 }
-	return 0
-}
 
 NNN_COL_IDX="$(col_idx_by_name "${TP_INDEX_CSV}" measured_pps_nnnpps || true)"
 RESULT_COL_IDX="$(col_idx_by_name "${TP_INDEX_CSV}" measured_pps_result || true)"
@@ -626,6 +634,16 @@ elif [ "${res_plotted}" -eq 1 ]; then
 	THROUGHPUT_STATS_CSV="${THROUGHPUT_STATS_RESULT_CSV}"
 	LOSS_STATS_CSV="${LOSS_STATS_RESULT_CSV}"
 fi
+
+VM1_RX_COL_IDX="$(col_idx_by_name "${TP_INDEX_CSV}" vm1_rx_pps || true)"
+BACKEND_DELIVERED_COL_IDX="$(col_idx_by_name "${TP_INDEX_CSV}" backend_delivered_pps || true)"
+if ! plot_metric_from_index "VM1 RX PPS" "${VM1_RX_COL_IDX:-0}" "vm1-rx-pps" "VM1 RX (pps)" "${VM1_RX_STATS_CSV}"; then
+	rm -f "${VM1_RX_STATS_CSV}"
+fi
+if ! plot_metric_from_index "Backend Delivered PPS" "${BACKEND_DELIVERED_COL_IDX:-0}" "backend-delivered-pps" "Backend Delivered (pps)" "${BACKEND_DELIVERED_STATS_CSV}"; then
+	rm -f "${BACKEND_DELIVERED_STATS_CSV}"
+fi
+
 if [ -f "${LAT_INDEX_CSV}" ]; then
 	LAT_RAW_CSV="${OUT_DIR}/latency-peak-per-second-raw.csv"
 	echo "mode,rate_pps,repeat,elapsed_sec,peak_ms" >"${LAT_RAW_CSV}"
@@ -823,6 +841,12 @@ if [ -f "${LOSS_STATS_NNN_CSV}" ]; then
 fi
 if [ -f "${LOSS_STATS_RESULT_CSV}" ]; then
 	info "[exp2-plot] loss stats (result): ${LOSS_STATS_RESULT_CSV}"
+fi
+if [ -f "${VM1_RX_STATS_CSV}" ]; then
+	info "[exp2-plot] vm1 rx stats: ${VM1_RX_STATS_CSV}"
+fi
+if [ -f "${BACKEND_DELIVERED_STATS_CSV}" ]; then
+	info "[exp2-plot] backend delivered stats: ${BACKEND_DELIVERED_STATS_CSV}"
 fi
 if [ -f "${LAT_STATS_CSV}" ]; then
 	info "[exp2-plot] latency stats: ${LAT_STATS_CSV}"
