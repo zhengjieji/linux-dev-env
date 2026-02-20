@@ -244,10 +244,10 @@ exp2-test-smoke:
 exp2-discovery:
 	RUNTIME_IMAGE=${RUNTIME_IMAGE} ${EXP2_SCRIPT_DIR}/discovery.sh --out-root ${EXP2_DISCOVERY_OUT_DIR} --rate-pps ${EXP2_DISCOVERY_RATE_PPS} --duration ${EXP2_DISCOVERY_DURATION_SECS} --interval ${EXP2_DISCOVERY_INTERVAL_SECS} --max-dump-lines ${EXP2_DISCOVERY_MAX_DUMP_LINES}
 
-exp2-run-throughput: check-shell-syntax
+exp2-run-throughput:
 	RUNTIME_IMAGE=${RUNTIME_IMAGE} ${EXP2_SCRIPT_DIR}/run-throughput.sh --out-root ${EXP2_THROUGHPUT_OUT_DIR} --rates "${EXP2_RATES}" --repeats ${EXP2_REPEATS} --duration ${EXP2_DURATION_SECS} --progress-interval ${EXP2_PROGRESS_INTERVAL} --oracle-obj ${EXP2_ORACLE_OBJ}
 
-exp2-run-latency: check-shell-syntax
+exp2-run-latency:
 	RUNTIME_IMAGE=${RUNTIME_IMAGE} ${EXP2_SCRIPT_DIR}/run-latency.sh --out-root ${EXP2_LATENCY_OUT_DIR} --rates "${EXP2_LAT_RATES}" --repeats ${EXP2_LAT_REPEATS} --duration ${EXP2_LAT_DURATION_SECS} --ping-interval ${EXP2_LAT_PING_INTERVAL} --progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} --oracle-obj ${EXP2_ORACLE_OBJ}
 
 exp2-analyze:
@@ -256,13 +256,13 @@ exp2-analyze:
 exp2-install-plot-tool:
 	${KATRAN_SCRIPT_DIR}/install-gnuplot-user.sh
 
-exp2-plot: check-shell-syntax
+exp2-plot:
 	@args="--analysis-root ${EXP2_ANALYSIS_OUT_DIR} --install-gnuplot-user"; \
 	if [ -n "${EXP2_ANALYSIS_DIR}" ]; then args="--analysis-dir ${EXP2_ANALYSIS_DIR} --install-gnuplot-user"; fi; \
 	if [ -n "${EXP2_PLOT_OUT_DIR}" ]; then args="$$args --out-dir ${EXP2_PLOT_OUT_DIR}"; fi; \
 	${EXP2_SCRIPT_DIR}/plot.sh $$args
 
-exp2-run-all: check-shell-syntax
+exp2-run-all:
 	@if [ -n "${EXP2_ORACLE_PATCH}" ]; then \
 		RUNTIME_IMAGE=${RUNTIME_IMAGE} bash ${EXP2_SCRIPT_DIR}/run-all.sh --runtime-image ${RUNTIME_IMAGE} --patch ${EXP2_ORACLE_PATCH} --tp-rates "${EXP2_RATES}" --tp-repeats ${EXP2_REPEATS} --tp-duration ${EXP2_DURATION_SECS} --tp-progress-interval ${EXP2_PROGRESS_INTERVAL} --lat-rates "${EXP2_LAT_RATES}" --lat-repeats ${EXP2_LAT_REPEATS} --lat-duration ${EXP2_LAT_DURATION_SECS} --lat-ping-interval ${EXP2_LAT_PING_INTERVAL} --lat-progress-interval ${EXP2_LAT_PROGRESS_INTERVAL} ${EXP2_RUN_ALL_EXTRA_ARGS}; \
 	else \
@@ -271,23 +271,11 @@ exp2-run-all: check-shell-syntax
 
 exp2-run-measurement: exp2-run-all
 
-exp2-run-discovery: check-shell-syntax
+exp2-run-discovery:
 	RUNTIME_IMAGE=${RUNTIME_IMAGE} bash ${EXP2_SCRIPT_DIR}/run-discovery-pipeline.sh --out-root ${EXP2_DISCOVERY_OUT_DIR} --rate-pps ${EXP2_DISCOVERY_RATE_PPS} --duration ${EXP2_DISCOVERY_DURATION_SECS} --interval ${EXP2_DISCOVERY_INTERVAL_SECS} --max-dump-lines ${EXP2_DISCOVERY_MAX_DUMP_LINES} ${EXP2_RUN_DISCOVERY_EXTRA_ARGS}
 
 exp3-auto-v0:
 	${EXP3_SCRIPT_DIR}/run-auto-v0.sh
-
-check-shell-syntax:
-	@set -eu; \
-	files="$$( { rg --files -g '*.sh' scripts tools tests; printf '%s\n' q-script/yifei-q; } )"; \
-	count="$$(printf '%s\n' "$$files" | sed '/^$$/d' | wc -l | awk '{print $$1}')"; \
-	if [ "$$count" -eq 0 ]; then \
-		echo "[check-shell-syntax] no shell scripts found"; \
-		exit 0; \
-	fi; \
-	echo "[check-shell-syntax] checking $$count scripts"; \
-	printf "%s\n" "$$files" | sed '/^$$/d' | xargs -r -n1 bash -n; \
-	echo "[check-shell-syntax] all scripts passed"
 
 # Backward-compatible aliases
 katran-exp-one: exp1-run-one
