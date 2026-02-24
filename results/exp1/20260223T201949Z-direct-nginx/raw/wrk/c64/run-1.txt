@@ -1,0 +1,13 @@
+Running 1m test @ http://192.168.100.1:8080/exp1-1k.txt
+  4 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   249.28us   48.73us   1.76ms   72.63%
+    Req/Sec    63.37k     4.90k   87.34k    76.36%
+  Latency Distribution
+     50%  242.00us
+     75%  270.00us
+     90%  321.00us
+     99%  378.00us
+  15152852 requests in 1.00m, 17.96GB read
+Requests/sec: 252129.80
+Transfer/sec:    306.09MB
