@@ -4,6 +4,16 @@ This repository contains *one* workflow for building and modifying the Linux ker
 
 ***This repository is cloned and modified from rosalab/(unknown)-kernel***
 
+## Project Layout
+
+- `scripts/` host-side automation
+  - `scripts/exp1/` Experiment 1 runnable scripts
+  - `scripts/exp2/` Experiment 2 scaffolding
+  - `scripts/exp3/` Experiment 3 scaffolding
+- `source/` external source trees (for example, `source/katran/`)
+- `documents/` experiment design notes and methodology
+- `tests/` dry-run and live integration checks
+
 #### One-Command Setup (No sudo)
 ```sh
 ./scripts/setup.sh
@@ -112,6 +122,8 @@ Dual VM details:
 - vm1 data-plane IP: `192.168.100.1/24`
 - vm2 data-plane IP: `192.168.100.2/24`
 - vm1 and vm2 share a bridge in the session container for direct L2 connectivity
+- default host CPU pinning is enabled via `DUAL_VM1_HOST_CPUSET=auto` and `DUAL_VM2_HOST_CPUSET=auto`
+- default VM shape is `4 vCPU / 4096 MiB` per VM (`DUAL_VM{1,2}_VCPUS`, `DUAL_VM{1,2}_MEMORY_MB`)
 
 #### If you want to enter the docker container where QEMU is running
 ```sh
@@ -177,6 +189,65 @@ Live dual-vm integration (ssh + ping + xdp smoke):
 
 # or through unified live runner
 ./tests/vm-linux-dev/run-live.sh --dual-vm
+```
+
+## Experiment 1 Run
+
+Exp1 now supports Step 1 + Step 2 paths:
+
+- `direct-nginx`: vm2 `wrk` -> vm1 `nginx`
+- `vanilla-katran`: vm2 `wrk` -> vm1 Katran VIP -> vm1 `nginx`
+
+Build prerequisites once:
+
+```sh
+make docker
+make exp1-katran-build
+```
+
+Run commands:
+
+```sh
+# default full run (both direct + vanilla-katran)
+make exp1-run
+
+# fast smoke run (direct only)
+make exp1-smoke
+```
+
+Direct script usage:
+
+```sh
+scripts/exp1/run.sh --mode both
+```
+
+Mode options:
+
+```sh
+scripts/exp1/run.sh --mode direct
+scripts/exp1/run.sh --mode katran
+```
+
+By default, Exp1 enables CPU pinning:
+
+- host (QEMU): `DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`
+- host VM shape: `DUAL_VM1_VCPUS=4`, `DUAL_VM2_VCPUS=4`, `DUAL_VM1_MEMORY_MB=4096`, `DUAL_VM2_MEMORY_MB=4096`
+- guest (process): `EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`, `EXP1_KATRAN_CPUSET=0-3`
+
+You can override or disable pinning with environment variables (`off` disables a layer).
+
+Output directories:
+
+- `results/exp1/<run-id>-direct-nginx/`
+- `results/exp1/<run-id>-vanilla-katran/`
+- `results/exp1/<run-id>-comparison/` (when mode is `both`)
+
+The script starts dual VMs before measurement and stops them automatically after completion (unless `--keep-vms` is used). Older runs are archived per run type under `results/exp1/archive/`.
+
+Regenerate plots for an existing run:
+
+```sh
+make exp1-plot EXP1_RUN_DIR=results/exp1/<run-id>-direct-nginx
 ```
 
 

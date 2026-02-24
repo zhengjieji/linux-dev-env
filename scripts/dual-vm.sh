@@ -16,6 +16,12 @@ VM1_HOST_GDB_PORT="${DUAL_VM1_GDB_PORT:-1311}"
 VM2_HOST_SSH_PORT="${DUAL_VM2_SSH_PORT:-53122}"
 VM2_HOST_NET_PORT="${DUAL_VM2_NET_PORT:-53123}"
 VM2_HOST_GDB_PORT="${DUAL_VM2_GDB_PORT:-1312}"
+VM1_HOST_CPUSET="${DUAL_VM1_HOST_CPUSET:-auto}"
+VM2_HOST_CPUSET="${DUAL_VM2_HOST_CPUSET:-auto}"
+VM1_MEMORY_MB="${DUAL_VM1_MEMORY_MB:-}"
+VM2_MEMORY_MB="${DUAL_VM2_MEMORY_MB:-}"
+VM1_VCPUS="${DUAL_VM1_VCPUS:-}"
+VM2_VCPUS="${DUAL_VM2_VCPUS:-}"
 
 VM1_INNER_SSH_PORT=52222
 VM1_INNER_NET_PORT=52223
@@ -39,6 +45,7 @@ SSH_OPTS=(
 	-o UserKnownHostsFile=/dev/null
 	-o StrictHostKeyChecking=no
 	-o ConnectTimeout=3
+	-o LogLevel=ERROR
 )
 
 IMAGE_REF=""
@@ -69,11 +76,146 @@ Environment:
   RUNTIME_IMAGE                Docker image name (default: ${RUNTIME_IMAGE})
   DUAL_VM1_SSH_PORT            Host SSH port for vm1 (default: ${VM1_HOST_SSH_PORT})
   DUAL_VM2_SSH_PORT            Host SSH port for vm2 (default: ${VM2_HOST_SSH_PORT})
+  DUAL_VM1_HOST_CPUSET         Host CPU pinning for vm1 QEMU (default: ${VM1_HOST_CPUSET}; auto/off/taskset format)
+  DUAL_VM2_HOST_CPUSET         Host CPU pinning for vm2 QEMU (default: ${VM2_HOST_CPUSET}; auto/off/taskset format)
+  DUAL_VM1_MEMORY_MB           VM1 guest memory in MiB (optional, e.g. 4096)
+  DUAL_VM2_MEMORY_MB           VM2 guest memory in MiB (optional, e.g. 4096)
+  DUAL_VM1_VCPUS               VM1 vCPU count (optional, e.g. 4)
+  DUAL_VM2_VCPUS               VM2 vCPU count (optional, e.g. 4)
 EOF
 }
 
 require_cmd() {
 	command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+is_cpuset_spec() {
+	local value="$1"
+	[[ "${value}" =~ ^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$ ]]
+}
+
+is_cpuset_mode() {
+	local value="$1"
+	[ "${value}" = "auto" ] || [ "${value}" = "off" ]
+}
+
+validate_cpuset() {
+	local label="$1"
+	local value="$2"
+	[ -z "${value}" ] && return 0
+	is_cpuset_mode "${value}" && return 0
+	is_cpuset_spec "${value}" || die "${label} has invalid CPUSET '${value}' (expected format like 0-3,8-11)"
+}
+
+is_pos_int() {
+	local value="$1"
+	[[ "${value}" =~ ^[0-9]+$ ]] && [ "${value}" -gt 0 ]
+}
+
+validate_pos_int_optional() {
+	local label="$1"
+	local value="$2"
+	[ -z "${value}" ] && return 0
+	is_pos_int "${value}" || die "${label} must be a positive integer (got '${value}')"
+}
+
+resolve_auto_host_cpusets() {
+	[ "${VM1_HOST_CPUSET}" = "off" ] && VM1_HOST_CPUSET=""
+	[ "${VM2_HOST_CPUSET}" = "off" ] && VM2_HOST_CPUSET=""
+
+	local need_auto=0
+	[ "${VM1_HOST_CPUSET}" = "auto" ] && need_auto=1
+	[ "${VM2_HOST_CPUSET}" = "auto" ] && need_auto=1
+	[ "${need_auto}" -eq 1 ] || return 0
+
+	require_cmd lscpu
+
+	local primary_lines=()
+	mapfile -t primary_lines < <(
+		lscpu -p=CPU,CORE,SOCKET,ONLINE | awk -F, '
+			$1 ~ /^#/ { next }
+			{
+				cpu = $1 + 0
+				core = $2
+				sock = $3
+				online = $4
+				if (online != "" && toupper(online) != "Y" && online != "1") {
+					next
+				}
+				key = sock ":" core
+				if (!(key in mincpu) || cpu < mincpu[key]) {
+					mincpu[key] = cpu
+				}
+			}
+			END {
+				for (key in mincpu) {
+					split(key, parts, ":")
+					printf "%s,%d\n", parts[1], mincpu[key]
+				}
+			}
+		' | sort -t, -k1,1n -k2,2n
+	)
+
+	[ "${#primary_lines[@]}" -gt 0 ] || die "failed to derive CPU topology for auto pinning"
+
+	declare -A socket_to_cpus=()
+	local socket_ids=()
+	local line
+	for line in "${primary_lines[@]}"; do
+		local sock
+		local cpu
+		IFS=, read -r sock cpu <<<"${line}"
+		[ -n "${sock}" ] || continue
+		if [ -z "${socket_to_cpus[${sock}]+x}" ]; then
+			socket_to_cpus["${sock}"]="${cpu}"
+			socket_ids+=("${sock}")
+		else
+			socket_to_cpus["${sock}"]+=",${cpu}"
+		fi
+	done
+
+	[ "${#socket_ids[@]}" -gt 0 ] || die "failed to derive socket groups for auto pinning"
+	IFS=$'\n' socket_ids=($(printf '%s\n' "${socket_ids[@]}" | sort -n))
+	unset IFS
+
+	local auto_vm1=""
+	local auto_vm2=""
+	if [ "${#socket_ids[@]}" -ge 2 ]; then
+		auto_vm1="${socket_to_cpus[${socket_ids[0]}]}"
+		auto_vm2="${socket_to_cpus[${socket_ids[1]}]}"
+	else
+		local only_socket="${socket_ids[0]}"
+		local cpus=()
+		IFS=',' read -r -a cpus <<<"${socket_to_cpus[${only_socket}]}"
+		unset IFS
+		local idx
+		for idx in "${!cpus[@]}"; do
+			if [ $((idx % 2)) -eq 0 ]; then
+				if [ -z "${auto_vm1}" ]; then
+					auto_vm1="${cpus[${idx}]}"
+				else
+					auto_vm1+=",${cpus[${idx}]}"
+				fi
+			else
+				if [ -z "${auto_vm2}" ]; then
+					auto_vm2="${cpus[${idx}]}"
+				else
+					auto_vm2+=",${cpus[${idx}]}"
+				fi
+			fi
+		done
+		[ -n "${auto_vm1}" ] || die "auto pinning failed to select vm1 CPUs"
+		[ -n "${auto_vm2}" ] || auto_vm2="${auto_vm1}"
+	fi
+
+	if [ "${VM1_HOST_CPUSET}" = "auto" ]; then
+		VM1_HOST_CPUSET="${auto_vm1}"
+	fi
+	if [ "${VM2_HOST_CPUSET}" = "auto" ]; then
+		VM2_HOST_CPUSET="${auto_vm2}"
+	fi
+
+	log "auto host cpu pinning resolved: vm1=${VM1_HOST_CPUSET}, vm2=${VM2_HOST_CPUSET}"
 }
 
 resolve_image_ref() {
@@ -100,6 +242,30 @@ vm_host_ssh_port() {
 	case "$1" in
 		vm1) echo "${VM1_HOST_SSH_PORT}" ;;
 		vm2) echo "${VM2_HOST_SSH_PORT}" ;;
+		*) die "unknown vm: $1" ;;
+	esac
+}
+
+vm_host_cpuset() {
+	case "$1" in
+		vm1) echo "${VM1_HOST_CPUSET}" ;;
+		vm2) echo "${VM2_HOST_CPUSET}" ;;
+		*) die "unknown vm: $1" ;;
+	esac
+}
+
+vm_memory_mb() {
+	case "$1" in
+		vm1) echo "${VM1_MEMORY_MB}" ;;
+		vm2) echo "${VM2_MEMORY_MB}" ;;
+		*) die "unknown vm: $1" ;;
+	esac
+}
+
+vm_vcpus() {
+	case "$1" in
+		vm1) echo "${VM1_VCPUS}" ;;
+		vm2) echo "${VM2_VCPUS}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -139,6 +305,13 @@ vm_ports() {
 ensure_prereqs() {
 	require_cmd docker
 	require_cmd ssh
+	resolve_auto_host_cpusets
+	validate_cpuset "DUAL_VM1_HOST_CPUSET" "${VM1_HOST_CPUSET}"
+	validate_cpuset "DUAL_VM2_HOST_CPUSET" "${VM2_HOST_CPUSET}"
+	validate_pos_int_optional "DUAL_VM1_MEMORY_MB" "${VM1_MEMORY_MB}"
+	validate_pos_int_optional "DUAL_VM2_MEMORY_MB" "${VM2_MEMORY_MB}"
+	validate_pos_int_optional "DUAL_VM1_VCPUS" "${VM1_VCPUS}"
+	validate_pos_int_optional "DUAL_VM2_VCPUS" "${VM2_VCPUS}"
 	[ -x "${ROOT_DIR}/q-script/yifei-q" ] || die "missing qemu launcher: ${ROOT_DIR}/q-script/yifei-q"
 	[ -d "${LINUX_DIR}" ] || die "linux directory missing: ${LINUX_DIR}"
 	[ -f "${LINUX_DIR}/.config" ] || die "linux .config missing: ${LINUX_DIR}/.config"
@@ -262,9 +435,21 @@ start_vm() {
 	local inner_net
 	local inner_gdb
 	local serial_port
+	local host_cpuset
+	local vm_mem_mb
+	local vm_vcpus_count
 	tap_name="$(vm_tap_name "${vm}")"
 	mac="$(vm_data_mac "${vm}")"
 	read -r inner_ssh inner_net inner_gdb serial_port < <(vm_ports "${vm}")
+	host_cpuset="$(vm_host_cpuset "${vm}")"
+	vm_mem_mb="$(vm_memory_mb "${vm}")"
+	vm_vcpus_count="$(vm_vcpus "${vm}")"
+	if [ -n "${host_cpuset}" ]; then
+		log "pinning ${vm} QEMU to host CPUs ${host_cpuset}"
+	fi
+	if [ -n "${vm_vcpus_count}" ] || [ -n "${vm_mem_mb}" ]; then
+		log "launch config ${vm}: vcpus=${vm_vcpus_count:-default} memory_mb=${vm_mem_mb:-default}"
+	fi
 
 	ensure_session_container
 	ensure_bridge
@@ -278,6 +463,9 @@ start_vm() {
 		-e VM_INNER_NET="${inner_net}" \
 		-e VM_INNER_GDB="${inner_gdb}" \
 		-e VM_SERIAL="${serial_port}" \
+		-e VM_HOST_CPUSET="${host_cpuset}" \
+		-e VM_MEMORY_MB="${vm_mem_mb}" \
+		-e VM_VCPUS="${vm_vcpus_count}" \
 		"${SESSION_NAME}" \
 		bash -lc '
 set -euo pipefail
@@ -288,12 +476,27 @@ fi
 rm -f "${pid_file}"
 qargs="-netdev tap,id=data0,ifname=${TAP_NAME},script=no,downscript=no -device virtio-net-pci,netdev=data0,mac=${VM_MAC}"
 cd /linux
+qemu_cmd=(/linux-dev-env/q-script/yifei-q -s)
+if [ -n "${VM_VCPUS}" ]; then
+	qemu_cmd+=(-N "${VM_VCPUS}")
+fi
+if [ -n "${VM_MEMORY_MB}" ]; then
+	qemu_cmd+=(-M "${VM_MEMORY_MB}")
+fi
+qemu_cmd+=(-q "${qargs}")
+if [ -n "${VM_HOST_CPUSET}" ]; then
+	command -v taskset >/dev/null 2>&1 || { echo "taskset is required for CPU pinning" >&2; exit 1; }
+	qemu_cmd=(taskset -c "${VM_HOST_CPUSET}" "${qemu_cmd[@]}")
+fi
 Q_SSH_FWD_PORT="${VM_INNER_SSH}" \
 Q_NET_FWD_PORT="${VM_INNER_NET}" \
 Q_SERIAL_TCP_PORT="${VM_SERIAL}" \
 Q_GDB_PORT="${VM_INNER_GDB}" \
-/linux-dev-env/q-script/yifei-q -s -q "${qargs}" >"/tmp/${VM_NAME}.log" 2>&1 &
+"${qemu_cmd[@]}" >"/tmp/${VM_NAME}.log" 2>&1 &
 echo $! > "${pid_file}"
+if [ -n "${VM_HOST_CPUSET}" ]; then
+	taskset -apc "${VM_HOST_CPUSET}" "$(cat "${pid_file}")" >/dev/null
+fi
 '
 
 	log "started ${vm}; waiting for SSH on localhost:$(vm_host_ssh_port "${vm}")"

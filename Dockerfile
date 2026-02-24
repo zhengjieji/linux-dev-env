@@ -20,6 +20,6 @@ RUN DEBIAN_FRONTEND=noninteractive \
       pkg-config lsb-release wget software-properties-common gnupg zlib1g llvm \
       qemu-kvm libvirt-clients libvirt-daemon-system bridge-utils virtinst libvirt-daemon xterm attr busybox openssh-server \
       iputils-ping kmod \
+      curl iproute2 nginx wrk httperf \
       clang && \
     rm -rf /var/lib/apt/lists/*
-
