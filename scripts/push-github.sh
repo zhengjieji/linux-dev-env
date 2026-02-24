@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 REMOTE="origin"
-BRANCH="dual-vm"
+BRANCH="katran-exp"
 COMMIT_MESSAGE="chore: update dual-vm"
 FORCE_WITH_LEASE=0
 
