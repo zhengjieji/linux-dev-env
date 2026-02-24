@@ -7,7 +7,7 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 REMOTE="origin"
 BRANCH="katran-exp"
-COMMIT_MESSAGE="chore: update dual-vm"
+COMMIT_MESSAGE="chore: update katran-exp"
 FORCE_WITH_LEASE=0
 
 log() {
@@ -35,7 +35,7 @@ Options:
 
 Example:
   $(basename "$0")
-  $(basename "$0") --branch dual-vm --message "sync repo"
+  $(basename "$0") --branch katran-exp --message "sync repo"
 EOF
 }
 
@@ -143,6 +143,7 @@ push_branch() {
 
 main() {
 	parse_args "$@"
+	log "target remote/branch: ${REMOTE}/${BRANCH}"
 	ensure_repo
 	ensure_linux_ignored
 	stage_changes_excluding_linux
