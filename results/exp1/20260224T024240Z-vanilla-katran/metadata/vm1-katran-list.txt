@@ -1,5 +1,0 @@
-2026/02/24 03:39:56 vips len 1
-VIP:      192.168.100.100 Port:   8080 Protocol: tcp
-Vip's flags:  LOCAL_VIP 
- ->192.168.100.1     weight: 1 flags:  LOCAL_REAL 
-exiting

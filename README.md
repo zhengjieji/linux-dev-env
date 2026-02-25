@@ -195,8 +195,8 @@ Live dual-vm integration (ssh + ping + xdp smoke):
 
 Exp1 now supports Step 1 + Step 2 paths:
 
-- `direct-nginx`: vm2 `wrk` -> vm1 `nginx`
-- `vanilla-katran`: vm2 `wrk` -> vm1 Katran VIP -> vm1 `nginx`
+- `direct-nginx`: client VM load tool (`wrk`/`httperf`) -> vm1 `nginx`
+- `vanilla-katran`: client VM load tool (`wrk`/`httperf`) -> vm1 Katran VIP -> vm1 `nginx`
 
 Build prerequisites once:
 
@@ -228,11 +228,35 @@ scripts/exp1/run.sh --mode direct
 scripts/exp1/run.sh --mode katran
 ```
 
+Workload options:
+
+```sh
+# default is both workload parts (wrk + wrk2)
+scripts/exp1/run.sh --mode both --workloads both
+
+# run only one part
+scripts/exp1/run.sh --mode both --workloads wrk
+scripts/exp1/run.sh --mode both --workloads wrk2
+scripts/exp1/run.sh --mode both --workloads httperf
+
+# run all three parts (wrk + wrk2 + httperf, including httperf)
+scripts/exp1/run.sh --mode both --workloads all
+
+# multi-client httperf (4 VMs total: vm1 server + vm2/vm3/vm4 clients)
+make exp1-run EXP1_WORKLOADS=httperf EXP1_HTTPERF_CLIENT_VMS="vm2 vm3 vm4"
+
+# dual-vm style httperf with multiple workers on vm2
+make exp1-run EXP1_WORKLOADS=httperf EXP1_HTTPERF_CLIENT_VMS="vm2" EXP1_HTTPERF_WORKERS_PER_VM=3
+
+# dual-vm style wrk2 open-loop (same VM placement as wrk)
+make exp1-run EXP1_WORKLOADS=wrk2 EXP1_WRK2_THREADS=4 EXP1_WRK2_CONNECTIONS=256 EXP1_WRK2_RATES="50000 100000 150000 200000 250000 300000 350000 400000 450000 500000"
+```
+
 By default, Exp1 enables CPU pinning:
 
-- host (QEMU): `DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`
-- host VM shape: `DUAL_VM1_VCPUS=4`, `DUAL_VM2_VCPUS=4`, `DUAL_VM1_MEMORY_MB=4096`, `DUAL_VM2_MEMORY_MB=4096`
-- guest (process): `EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`, `EXP1_KATRAN_CPUSET=0-3`
+- host (QEMU): `DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`, `DUAL_VM3_HOST_CPUSET=auto`, `DUAL_VM4_HOST_CPUSET=auto`
+- host VM shape: `DUAL_VM1_VCPUS=4`, `DUAL_VM2_VCPUS=4`, `DUAL_VM3_VCPUS=4`, `DUAL_VM4_VCPUS=4`, `DUAL_VM1_MEMORY_MB=4096`, `DUAL_VM2_MEMORY_MB=4096`, `DUAL_VM3_MEMORY_MB=4096`, `DUAL_VM4_MEMORY_MB=4096`
+- guest (process): `EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`, `EXP1_WRK2_CPUSET=0-3`, `EXP1_HTTPERF_CPUSET=0-3`, `EXP1_KATRAN_CPUSET=0-3`
 
 You can override or disable pinning with environment variables (`off` disables a layer).
 
@@ -242,7 +266,14 @@ Output directories:
 - `results/exp1/<run-id>-vanilla-katran/`
 - `results/exp1/<run-id>-comparison/` (when mode is `both`)
 
-The script starts dual VMs before measurement and stops them automatically after completion (unless `--keep-vms` is used). Older runs are archived per run type under `results/exp1/archive/`.
+The script starts dual VMs before measurement and stops them automatically after completion (unless `--keep-vms` is used). Older runs are archived per run type (including `comparison`) under `results/exp1/archive/`.
+
+Per run kind, outputs now include separate artifacts for both workload parts:
+
+- wrk: `wrk-summary.csv`, `wrk-summary-agg.csv`, `plots/wrk-overview.png`
+- wrk2: `wrk2-summary.csv`, `wrk2-summary-agg.csv`, `plots/wrk2-overview.png`
+- httperf: `httperf-summary.csv`, `httperf-summary-agg.csv`, `plots/httperf-overview.png`
+- comparison dir (mode `both`): `plots/wrk-direct-vs-katran.png`, `plots/wrk2-direct-vs-katran.png`, `plots/httperf-direct-vs-katran.png`
 
 Regenerate plots for an existing run:
 

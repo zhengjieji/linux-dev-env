@@ -1,133 +1,100 @@
-# Experiment 1 Results Report (Step 1: Direct Nginx + wrk)
+# Experiment 1 Results Report (Step 1 + Step 2: Direct Nginx vs Vanilla Katran)
 
 ## 1. 报告范围
 
-- 实验阶段：Experiment 1, Step 1（Direct baseline）
-- 运行目录：`results/exp1/20260222T210742Z-direct-nginx`
-- 运行日期（UTC）：2026-02-22
-- 拓扑：`vm2 (wrk client) -> vm1 (nginx server)`，无 Katran/XDP 路径
+- 实验阶段：Experiment 1 完整基线（Step 1 + Step 2）
+- 运行 ID：`20260224T024240Z`
+- 运行日期（UTC）：2026-02-24
+- 对比路径：
+  1. `direct-nginx`: `vm2 (wrk) -> vm1 nginx (192.168.100.1:8080)`
+  2. `vanilla-katran`: `vm2 (wrk) -> VIP 192.168.100.100:8080 -> vm1 nginx`
 
-本报告只覆盖 Step 1：建立可解释、可复现实验基线。
+本报告基于该次完整 run 的最新结果，覆盖 direct 与 vanilla-katran 的对照结论。
 
-## 2. 实验目标（Step 1）
-
-1. 建立 direct path 下的基线性能曲线（无 Katran）。
-2. 明确并发增加时的吞吐与延迟趋势，识别 knee/平台区。
-3. 记录 server/client 两侧 CPU 利用率，检查是否存在明显 client-side bottleneck。
-4. 形成后续 Step 2（Vanilla Katran）可直接对比的基线数据。
-
-## 3. 实验配置
-
-### 3.1 负载与时长
+## 2. 实验配置（本次 run）
 
 - 工具：`wrk`
-- 并发连接（sweep）：`1 2 4 8 16 32 64 128 256`
-- 线程数：`4`（每点实际线程数为 `min(4, connections)`）
-- 预热：`15s`
-- 正式测量：`60s`
-- 每点重复：`5`
-- 总测量点：`9 * 5 = 45`
+- 并发 sweep：`1 2 4 8 16 32 64 128 256`
+- 线程数：`4`（每点实际 `min(4, connections)`）
+- warmup：`15s`
+- measure：`60s`
+- repeats：`5`
+- 每条路径共 `45` 个测量点（`9 * 5`）
+- CPU pinning：
+  - host: `DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`
+  - guest: `EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`, `EXP1_KATRAN_CPUSET=0-3`
+- Katran 参数（Step 2）：VIP `192.168.100.100`，gRPC `50051`，forwarding cores `0,1,2,3`
 
-### 3.2 服务器与流量目标
+## 3. 结果总览
 
-- server IP：`192.168.100.1`
-- server port：`8080`
-- server file：`exp1-1k.txt`（1KB 静态文件）
-- nginx 运行在 vm1，wrk 运行在 vm2
+### 3.1 数据质量
 
-### 3.3 CPU pinning
+- `direct-nginx/wrk-summary.csv`：46 行（1 表头 + 45 测量）
+- `vanilla-katran/wrk-summary.csv`：46 行（1 表头 + 45 测量）
+- 两条路径均为：
+  - `max_non2xx = 0`
+  - `max_socket_timeouts = 0`
 
-- host-level（QEMU）：`DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`
-- guest-level（process）：`EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`
+说明本次结果有效，没有明显功能错误/超时污染。
 
-### 3.4 采集指标
+### 3.2 关键对比（聚合均值）
 
-每个测量点都会记录：
+| connections | direct RPS | katran RPS | RPS 差值 | direct p99 (ms) | katran p99 (ms) | p99 差值 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 7267 | 7189 | -1.08% | 0.1540 | 0.1632 | +5.97% |
+| 2 | 14797 | 15482 | +4.63% | 0.1536 | 0.1566 | +1.95% |
+| 4 | 44283 | 42265 | -4.56% | 0.1304 | 0.1340 | +2.76% |
+| 8 | 107205 | 104494 | -2.53% | 0.1136 | 0.1168 | +2.82% |
+| 16 | 170372 | 167997 | -1.39% | 0.1486 | 0.1528 | +2.83% |
+| 32 | 224081 | 222399 | -0.75% | 0.2210 | 0.2246 | +1.63% |
+| 64 | 252214 | 249242 | -1.18% | 0.3768 | 0.3878 | +2.92% |
+| 128 | 273289 | 268430 | -1.78% | 0.7086 | 0.7282 | +2.77% |
+| 256 | 280383 | 277672 | -0.97% | 1.1460 | 1.1960 | +4.36% |
 
-1. 吞吐：`requests_per_sec`（wrk `Requests/sec`）
-2. 延迟：`p99_ms`（以及 avg/stdev）
-3. 错误：`non2xx_responses`、`socket_timeouts`
-4. CPU 利用率：`vm1_cpu_util_pct`、`vm2_cpu_util_pct`（由 `/proc/stat` 前后差分计算）
+整体统计（9 个并发点平均）：
 
-## 4. 结果（聚合）
+- 平均 RPS 变化：`-1.07%`（Katran 相对 Direct）
+- 平均 p99 变化：`+3.11%`
 
-来源：`wrk-summary-agg.csv`
+中高并发（`c >= 16`）更有代表性：
 
-| connections | repeats | rps_mean | p99_ms_mean | vm1_cpu_util_pct_mean | vm2_cpu_util_pct_mean |
-|---:|---:|---:|---:|---:|---:|
-| 1 | 5 | 7248.41 | 0.1716 | 2.1861 | 1.5815 |
-| 2 | 5 | 15310.30 | 0.1510 | 5.2485 | 2.6680 |
-| 4 | 5 | 44088.13 | 0.1354 | 11.1604 | 6.5320 |
-| 8 | 5 | 108315.55 | 0.1140 | 30.1949 | 13.6428 |
-| 16 | 5 | 174080.49 | 0.1466 | 43.6294 | 22.9691 |
-| 32 | 5 | 225772.84 | 0.2212 | 51.3532 | 30.3957 |
-| 64 | 5 | 253811.05 | 0.3762 | 57.0401 | 30.8759 |
-| 128 | 5 | 273508.74 | 0.7154 | 61.9408 | 32.6559 |
-| 256 | 5 | 282195.60 | 1.1500 | 66.0566 | 34.2954 |
+- 平均 RPS 变化：`-1.21%`
+- 平均 p99 变化：`+2.90%`
 
-补充质量检查：
+峰值点（`c=256`）：
 
-- `max_non2xx = 0`
-- `max_socket_timeouts = 0`
+- Direct：`280382.862 RPS`, `p99=1.1460ms`
+- Vanilla Katran：`277671.660 RPS`, `p99=1.1960ms`
+- 差值：RPS `-0.97%`, p99 `+4.36%`
 
-## 5. 结果分析
+## 4. 结果解读（我对这次结果的看法）
 
-### 5.1 吞吐趋势
+1. 结果整体是“健康且可解释”的。  
+Direct 大多数点吞吐更高、延迟更低，符合“引入 Katran 路径会增加一些开销”的预期方向。
 
-1. `c=1 -> 64`：吞吐快速增长（7.2k -> 253.8k RPS）。
-2. `c=64 -> 128`：增幅明显放缓（约 +7.8%）。
-3. `c=128 -> 256`：进一步趋于平台（约 +3.2%）。
+2. 开销量级不大，但在中高并发上是稳定存在的。  
+`c>=16` 区间里，Katran 基本都表现为约 `1%` 级吞吐损失和约 `3%` 级 p99 增加，这足够作为 Exp2/Exp3 的优化基线。
 
-结论：吞吐曲线已呈现“接近平台”的典型形态，knee 大致在 `64~128` 区间。
+3. 低并发局部反常（例如 `c=2` Katran RPS 略高）可以视为统计抖动。  
+该点差异与单点波动量级接近，不改变整体趋势判读；而中高并发差异方向一致。
 
-### 5.2 延迟趋势
+4. CPU 利用率曲线两条路径非常接近。  
+这说明当前开销主要体现在端到端吞吐/延迟，而不是简单表现为“某一侧 CPU 明显更高”。
 
-1. 低并发（1~8）p99 维持在 `0.11~0.17ms`。
-2. 从 `32` 开始明显抬升（`0.22ms`）。
-3. `64/128/256` 分别约 `0.38/0.72/1.15ms`，随负载上升加速增长。
+## 5. 图表与产物
 
-结论：与吞吐平台区一致，延迟在高并发区上升明显，趋势合理。
+- direct 运行目录：`results/exp1/20260224T024240Z-direct-nginx`
+- katran 运行目录：`results/exp1/20260224T024240Z-vanilla-katran`
+- 对比目录：`results/exp1/20260224T024240Z-comparison`
+- 对比图：`results/exp1/20260224T024240Z-comparison/plots/wrk-direct-vs-katran.png`
+- 对比表：`results/exp1/20260224T024240Z-comparison/comparison-summary.csv`
 
-### 5.3 CPU 利用率与瓶颈位置
+## 6. 结论与下一步
 
-1. vm1 CPU 利用率从 `2.19%` 升至 `66.06%`。
-2. vm2 CPU 利用率从 `1.58%` 升至 `34.30%`。
-3. 全区间 vm1 > vm2，且高并发下吞吐趋缓而 vm1 仍上升。
+Exp1（Step1+Step2）状态：**完成**。  
+当前 baseline 已经具备进入 Exp2（Oracle hard-code）所需的对照基础。
 
-结论：当前证据更支持“服务侧/服务路径先成为主要限制因素”，不是 client 先顶满。
+建议 Exp2 重点观察：
 
-### 5.4 稳定性
-
-- 大部分并发点重复性较好（中高并发 CV 较低）。
-- 低并发点（尤其 `c=2, c=4`）抖动相对更大，但不影响整体趋势判读。
-
-## 6. 图表与产物
-
-- 总览图：`results/exp1/20260222T210742Z-direct-nginx/plots/wrk-overview.png`
-- 原始汇总：`results/exp1/20260222T210742Z-direct-nginx/wrk-summary.csv`
-- 聚合汇总：`results/exp1/20260222T210742Z-direct-nginx/wrk-summary-agg.csv`
-- 本次配置：`results/exp1/20260222T210742Z-direct-nginx/metadata/run-config.env`
-
-## 7. 当前问题与风险
-
-1. 最高点仍有小幅增长（`128 -> 256` 仍 +3.2%），平台区已出现但尚未完全“压平”。
-2. vm1 利用率未到 90%+，说明瓶颈可能不只是纯 CPU 算力，也可能包含网络栈/锁/调度等路径开销。
-3. 低并发点方差略高，建议后续报告中以中高并发趋势为主解释。
-
-## 8. Progress（项目进度）
-
-### Exp1 Step 1（Direct baseline）
-
-- [x] 目标路径跑通（vm2 wrk -> vm1 nginx）
-- [x] 固定参数 sweep（connections + repeats）完成
-- [x] RPS/p99 曲线完成并可视化
-- [x] 每点 server/client CPU 利用率采集与绘图完成
-- [x] 错误与超时检查（本次均为 0）
-- [x] 形成可复现实验结果包
-
-Step 1 状态：**已完成（可作为基线）**
-
-### 下一步（按实验路线）
-
-1. Exp1 Step 2：在同一测量协议下加入 Vanilla Katran 路径，做 direct vs vanilla 对照。
-2. 复用当前同一套图和指标（RPS/p99/CPU util），重点对比 knee 区间差异。
+1. `c=64~256` 的 RPS 与 p99 改善幅度（最能体现是否回收 Katran 基线开销）。
+2. 保持与本次完全一致的 wrk 参数与 pinning，确保对照可复现。

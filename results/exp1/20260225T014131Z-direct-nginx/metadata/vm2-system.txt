@@ -1,0 +1,20 @@
+Linux q 6.17.0 #2 SMP PREEMPT_DYNAMIC Sat Feb 21 03:59:34 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    inet 10.0.2.15/24 scope global eth0
+       valid_lft forever preferred_lft forever
+4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    inet 192.168.100.2/24 scope global eth1
+       valid_lft forever preferred_lft forever
+Total: 6
+TCP:   5 (estab 1, closed 2, orphaned 0, timewait 2)
+
+Transport Total     IP        IPv6
+RAW	  0         0         0        
+UDP	  0         0         0        
+TCP	  3         2         1        
+INET	  3         2         1        
+FRAG	  0         0         0        
+

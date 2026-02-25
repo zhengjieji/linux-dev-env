@@ -1,8 +1,0 @@
-make[1]: Entering directory '/home/zhengjie/github/local/nginx-exp'
-LINUX_DIR=/home/zhengjie/github/local/nginx-exp/linux RUNTIME_IMAGE=zhengjie-dual-vm \
-DUAL_VM1_SSH_PORT=53022 DUAL_VM2_SSH_PORT=53122 \
-/home/zhengjie/github/local/nginx-exp/scripts/dual-vm.sh status
-[dual-vm] session: running (dual-vm-session)
-  - vm1: running (pid 41, ssh localhost:53022)
-  - vm2: running (pid 92, ssh localhost:53122)
-make[1]: Leaving directory '/home/zhengjie/github/local/nginx-exp'

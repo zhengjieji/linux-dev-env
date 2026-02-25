@@ -16,12 +16,24 @@ VM1_HOST_GDB_PORT="${DUAL_VM1_GDB_PORT:-1311}"
 VM2_HOST_SSH_PORT="${DUAL_VM2_SSH_PORT:-53122}"
 VM2_HOST_NET_PORT="${DUAL_VM2_NET_PORT:-53123}"
 VM2_HOST_GDB_PORT="${DUAL_VM2_GDB_PORT:-1312}"
+VM3_HOST_SSH_PORT="${DUAL_VM3_SSH_PORT:-53222}"
+VM3_HOST_NET_PORT="${DUAL_VM3_NET_PORT:-53223}"
+VM3_HOST_GDB_PORT="${DUAL_VM3_GDB_PORT:-1313}"
+VM4_HOST_SSH_PORT="${DUAL_VM4_SSH_PORT:-53322}"
+VM4_HOST_NET_PORT="${DUAL_VM4_NET_PORT:-53323}"
+VM4_HOST_GDB_PORT="${DUAL_VM4_GDB_PORT:-1314}"
 VM1_HOST_CPUSET="${DUAL_VM1_HOST_CPUSET:-auto}"
 VM2_HOST_CPUSET="${DUAL_VM2_HOST_CPUSET:-auto}"
+VM3_HOST_CPUSET="${DUAL_VM3_HOST_CPUSET:-auto}"
+VM4_HOST_CPUSET="${DUAL_VM4_HOST_CPUSET:-auto}"
 VM1_MEMORY_MB="${DUAL_VM1_MEMORY_MB:-}"
 VM2_MEMORY_MB="${DUAL_VM2_MEMORY_MB:-}"
+VM3_MEMORY_MB="${DUAL_VM3_MEMORY_MB:-}"
+VM4_MEMORY_MB="${DUAL_VM4_MEMORY_MB:-}"
 VM1_VCPUS="${DUAL_VM1_VCPUS:-}"
 VM2_VCPUS="${DUAL_VM2_VCPUS:-}"
+VM3_VCPUS="${DUAL_VM3_VCPUS:-}"
+VM4_VCPUS="${DUAL_VM4_VCPUS:-}"
 
 VM1_INNER_SSH_PORT=52222
 VM1_INNER_NET_PORT=52223
@@ -38,6 +50,22 @@ VM2_SERIAL_PORT=1236
 VM2_TAP=tap-dual-vm2
 VM2_MAC=52:54:00:aa:00:22
 VM2_DATA_IP=192.168.100.2/24
+
+VM3_INNER_SSH_PORT=52422
+VM3_INNER_NET_PORT=52423
+VM3_INNER_GDB_PORT=1240
+VM3_SERIAL_PORT=1238
+VM3_TAP=tap-dual-vm3
+VM3_MAC=52:54:00:aa:00:33
+VM3_DATA_IP=192.168.100.3/24
+
+VM4_INNER_SSH_PORT=52522
+VM4_INNER_NET_PORT=52523
+VM4_INNER_GDB_PORT=1241
+VM4_SERIAL_PORT=1239
+VM4_TAP=tap-dual-vm4
+VM4_MAC=52:54:00:aa:00:44
+VM4_DATA_IP=192.168.100.4/24
 
 DEFAULT_WAIT_TIMEOUT=120
 
@@ -64,24 +92,32 @@ usage() {
 Usage: $(basename "$0") <command> [args]
 
 Commands:
-  start vm1|vm2                Start one VM (and shared session container if needed)
-  stop vm1|vm2|all             Stop one VM or tear down full dual-vm session
-  status                       Show status for session container and both VMs
-  ssh vm1|vm2 [command...]     SSH into a VM (or run one remote command)
-  wait-ssh vm1|vm2 [timeout]   Wait until SSH is ready (default timeout: ${DEFAULT_WAIT_TIMEOUT}s)
-  logs vm1|vm2 [tail_lines]    Show VM log tail from session container
+  start vm1|vm2|vm3|vm4                Start one VM (and shared session container if needed)
+  stop vm1|vm2|vm3|vm4|all             Stop one VM or tear down full session
+  status                               Show status for session container and VMs
+  ssh vm1|vm2|vm3|vm4 [command...]     SSH into a VM (or run one remote command)
+  wait-ssh vm1|vm2|vm3|vm4 [timeout]   Wait until SSH is ready (default timeout: ${DEFAULT_WAIT_TIMEOUT}s)
+  logs vm1|vm2|vm3|vm4 [tail_lines]    Show VM log tail from session container
 
 Environment:
   LINUX_DIR                    Linux source dir (default: ${LINUX_DIR})
   RUNTIME_IMAGE                Docker image name (default: ${RUNTIME_IMAGE})
   DUAL_VM1_SSH_PORT            Host SSH port for vm1 (default: ${VM1_HOST_SSH_PORT})
   DUAL_VM2_SSH_PORT            Host SSH port for vm2 (default: ${VM2_HOST_SSH_PORT})
+  DUAL_VM3_SSH_PORT            Host SSH port for vm3 (default: ${VM3_HOST_SSH_PORT})
+  DUAL_VM4_SSH_PORT            Host SSH port for vm4 (default: ${VM4_HOST_SSH_PORT})
   DUAL_VM1_HOST_CPUSET         Host CPU pinning for vm1 QEMU (default: ${VM1_HOST_CPUSET}; auto/off/taskset format)
   DUAL_VM2_HOST_CPUSET         Host CPU pinning for vm2 QEMU (default: ${VM2_HOST_CPUSET}; auto/off/taskset format)
+  DUAL_VM3_HOST_CPUSET         Host CPU pinning for vm3 QEMU (default: ${VM3_HOST_CPUSET}; auto/off/taskset format)
+  DUAL_VM4_HOST_CPUSET         Host CPU pinning for vm4 QEMU (default: ${VM4_HOST_CPUSET}; auto/off/taskset format)
   DUAL_VM1_MEMORY_MB           VM1 guest memory in MiB (optional, e.g. 4096)
   DUAL_VM2_MEMORY_MB           VM2 guest memory in MiB (optional, e.g. 4096)
+  DUAL_VM3_MEMORY_MB           VM3 guest memory in MiB (optional, e.g. 4096)
+  DUAL_VM4_MEMORY_MB           VM4 guest memory in MiB (optional, e.g. 4096)
   DUAL_VM1_VCPUS               VM1 vCPU count (optional, e.g. 4)
   DUAL_VM2_VCPUS               VM2 vCPU count (optional, e.g. 4)
+  DUAL_VM3_VCPUS               VM3 vCPU count (optional, e.g. 4)
+  DUAL_VM4_VCPUS               VM4 vCPU count (optional, e.g. 4)
 EOF
 }
 
@@ -122,16 +158,20 @@ validate_pos_int_optional() {
 resolve_auto_host_cpusets() {
 	[ "${VM1_HOST_CPUSET}" = "off" ] && VM1_HOST_CPUSET=""
 	[ "${VM2_HOST_CPUSET}" = "off" ] && VM2_HOST_CPUSET=""
+	[ "${VM3_HOST_CPUSET}" = "off" ] && VM3_HOST_CPUSET=""
+	[ "${VM4_HOST_CPUSET}" = "off" ] && VM4_HOST_CPUSET=""
 
-	local need_auto=0
-	[ "${VM1_HOST_CPUSET}" = "auto" ] && need_auto=1
-	[ "${VM2_HOST_CPUSET}" = "auto" ] && need_auto=1
-	[ "${need_auto}" -eq 1 ] || return 0
+	local auto_vms=()
+	[ "${VM1_HOST_CPUSET}" = "auto" ] && auto_vms+=("vm1")
+	[ "${VM2_HOST_CPUSET}" = "auto" ] && auto_vms+=("vm2")
+	[ "${VM3_HOST_CPUSET}" = "auto" ] && auto_vms+=("vm3")
+	[ "${VM4_HOST_CPUSET}" = "auto" ] && auto_vms+=("vm4")
+	[ "${#auto_vms[@]}" -gt 0 ] || return 0
 
 	require_cmd lscpu
 
-	local primary_lines=()
-	mapfile -t primary_lines < <(
+	local primary_cpus=()
+	mapfile -t primary_cpus < <(
 		lscpu -p=CPU,CORE,SOCKET,ONLINE | awk -F, '
 			$1 ~ /^#/ { next }
 			{
@@ -149,73 +189,46 @@ resolve_auto_host_cpusets() {
 			}
 			END {
 				for (key in mincpu) {
-					split(key, parts, ":")
-					printf "%s,%d\n", parts[1], mincpu[key]
+					printf "%d\n", mincpu[key]
 				}
 			}
-		' | sort -t, -k1,1n -k2,2n
+		' | sort -n
 	)
 
-	[ "${#primary_lines[@]}" -gt 0 ] || die "failed to derive CPU topology for auto pinning"
+	[ "${#primary_cpus[@]}" -gt 0 ] || die "failed to derive CPU topology for auto pinning"
 
-	declare -A socket_to_cpus=()
-	local socket_ids=()
-	local line
-	for line in "${primary_lines[@]}"; do
-		local sock
-		local cpu
-		IFS=, read -r sock cpu <<<"${line}"
-		[ -n "${sock}" ] || continue
-		if [ -z "${socket_to_cpus[${sock}]+x}" ]; then
-			socket_to_cpus["${sock}"]="${cpu}"
-			socket_ids+=("${sock}")
-		else
-			socket_to_cpus["${sock}"]+=",${cpu}"
-		fi
+	local auto_count="${#auto_vms[@]}"
+	local buckets=()
+	local i
+	for i in $(seq 1 "${auto_count}"); do
+		buckets+=("")
 	done
 
-	[ "${#socket_ids[@]}" -gt 0 ] || die "failed to derive socket groups for auto pinning"
-	IFS=$'\n' socket_ids=($(printf '%s\n' "${socket_ids[@]}" | sort -n))
-	unset IFS
+	local idx=0
+	local cpu
+	for cpu in "${primary_cpus[@]}"; do
+		local bucket_idx=$((idx % auto_count))
+		if [ -z "${buckets[${bucket_idx}]}" ]; then
+			buckets[${bucket_idx}]="${cpu}"
+		else
+			buckets[${bucket_idx}]+=",${cpu}"
+		fi
+		idx=$((idx + 1))
+	done
 
-	local auto_vm1=""
-	local auto_vm2=""
-	if [ "${#socket_ids[@]}" -ge 2 ]; then
-		auto_vm1="${socket_to_cpus[${socket_ids[0]}]}"
-		auto_vm2="${socket_to_cpus[${socket_ids[1]}]}"
-	else
-		local only_socket="${socket_ids[0]}"
-		local cpus=()
-		IFS=',' read -r -a cpus <<<"${socket_to_cpus[${only_socket}]}"
-		unset IFS
-		local idx
-		for idx in "${!cpus[@]}"; do
-			if [ $((idx % 2)) -eq 0 ]; then
-				if [ -z "${auto_vm1}" ]; then
-					auto_vm1="${cpus[${idx}]}"
-				else
-					auto_vm1+=",${cpus[${idx}]}"
-				fi
-			else
-				if [ -z "${auto_vm2}" ]; then
-					auto_vm2="${cpus[${idx}]}"
-				else
-					auto_vm2+=",${cpus[${idx}]}"
-				fi
-			fi
-		done
-		[ -n "${auto_vm1}" ] || die "auto pinning failed to select vm1 CPUs"
-		[ -n "${auto_vm2}" ] || auto_vm2="${auto_vm1}"
-	fi
+	for idx in "${!auto_vms[@]}"; do
+		local vm="${auto_vms[${idx}]}"
+		local vm_cpuset="${buckets[${idx}]}"
+		[ -n "${vm_cpuset}" ] || die "auto pinning failed to select CPUs for ${vm}"
+		case "${vm}" in
+			vm1) VM1_HOST_CPUSET="${vm_cpuset}" ;;
+			vm2) VM2_HOST_CPUSET="${vm_cpuset}" ;;
+			vm3) VM3_HOST_CPUSET="${vm_cpuset}" ;;
+			vm4) VM4_HOST_CPUSET="${vm_cpuset}" ;;
+		esac
+	done
 
-	if [ "${VM1_HOST_CPUSET}" = "auto" ]; then
-		VM1_HOST_CPUSET="${auto_vm1}"
-	fi
-	if [ "${VM2_HOST_CPUSET}" = "auto" ]; then
-		VM2_HOST_CPUSET="${auto_vm2}"
-	fi
-
-	log "auto host cpu pinning resolved: vm1=${VM1_HOST_CPUSET}, vm2=${VM2_HOST_CPUSET}"
+	log "auto host cpu pinning resolved: vm1=${VM1_HOST_CPUSET:-none}, vm2=${VM2_HOST_CPUSET:-none}, vm3=${VM3_HOST_CPUSET:-none}, vm4=${VM4_HOST_CPUSET:-none}"
 }
 
 resolve_image_ref() {
@@ -242,6 +255,8 @@ vm_host_ssh_port() {
 	case "$1" in
 		vm1) echo "${VM1_HOST_SSH_PORT}" ;;
 		vm2) echo "${VM2_HOST_SSH_PORT}" ;;
+		vm3) echo "${VM3_HOST_SSH_PORT}" ;;
+		vm4) echo "${VM4_HOST_SSH_PORT}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -250,6 +265,8 @@ vm_host_cpuset() {
 	case "$1" in
 		vm1) echo "${VM1_HOST_CPUSET}" ;;
 		vm2) echo "${VM2_HOST_CPUSET}" ;;
+		vm3) echo "${VM3_HOST_CPUSET}" ;;
+		vm4) echo "${VM4_HOST_CPUSET}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -258,6 +275,8 @@ vm_memory_mb() {
 	case "$1" in
 		vm1) echo "${VM1_MEMORY_MB}" ;;
 		vm2) echo "${VM2_MEMORY_MB}" ;;
+		vm3) echo "${VM3_MEMORY_MB}" ;;
+		vm4) echo "${VM4_MEMORY_MB}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -266,6 +285,8 @@ vm_vcpus() {
 	case "$1" in
 		vm1) echo "${VM1_VCPUS}" ;;
 		vm2) echo "${VM2_VCPUS}" ;;
+		vm3) echo "${VM3_VCPUS}" ;;
+		vm4) echo "${VM4_VCPUS}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -274,6 +295,8 @@ vm_tap_name() {
 	case "$1" in
 		vm1) echo "${VM1_TAP}" ;;
 		vm2) echo "${VM2_TAP}" ;;
+		vm3) echo "${VM3_TAP}" ;;
+		vm4) echo "${VM4_TAP}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -282,6 +305,8 @@ vm_data_mac() {
 	case "$1" in
 		vm1) echo "${VM1_MAC}" ;;
 		vm2) echo "${VM2_MAC}" ;;
+		vm3) echo "${VM3_MAC}" ;;
+		vm4) echo "${VM4_MAC}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -290,6 +315,8 @@ vm_data_ip() {
 	case "$1" in
 		vm1) echo "${VM1_DATA_IP}" ;;
 		vm2) echo "${VM2_DATA_IP}" ;;
+		vm3) echo "${VM3_DATA_IP}" ;;
+		vm4) echo "${VM4_DATA_IP}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -298,6 +325,8 @@ vm_ports() {
 	case "$1" in
 		vm1) echo "${VM1_INNER_SSH_PORT} ${VM1_INNER_NET_PORT} ${VM1_INNER_GDB_PORT} ${VM1_SERIAL_PORT}" ;;
 		vm2) echo "${VM2_INNER_SSH_PORT} ${VM2_INNER_NET_PORT} ${VM2_INNER_GDB_PORT} ${VM2_SERIAL_PORT}" ;;
+		vm3) echo "${VM3_INNER_SSH_PORT} ${VM3_INNER_NET_PORT} ${VM3_INNER_GDB_PORT} ${VM3_SERIAL_PORT}" ;;
+		vm4) echo "${VM4_INNER_SSH_PORT} ${VM4_INNER_NET_PORT} ${VM4_INNER_GDB_PORT} ${VM4_SERIAL_PORT}" ;;
 		*) die "unknown vm: $1" ;;
 	esac
 }
@@ -308,10 +337,16 @@ ensure_prereqs() {
 	resolve_auto_host_cpusets
 	validate_cpuset "DUAL_VM1_HOST_CPUSET" "${VM1_HOST_CPUSET}"
 	validate_cpuset "DUAL_VM2_HOST_CPUSET" "${VM2_HOST_CPUSET}"
+	validate_cpuset "DUAL_VM3_HOST_CPUSET" "${VM3_HOST_CPUSET}"
+	validate_cpuset "DUAL_VM4_HOST_CPUSET" "${VM4_HOST_CPUSET}"
 	validate_pos_int_optional "DUAL_VM1_MEMORY_MB" "${VM1_MEMORY_MB}"
 	validate_pos_int_optional "DUAL_VM2_MEMORY_MB" "${VM2_MEMORY_MB}"
+	validate_pos_int_optional "DUAL_VM3_MEMORY_MB" "${VM3_MEMORY_MB}"
+	validate_pos_int_optional "DUAL_VM4_MEMORY_MB" "${VM4_MEMORY_MB}"
 	validate_pos_int_optional "DUAL_VM1_VCPUS" "${VM1_VCPUS}"
 	validate_pos_int_optional "DUAL_VM2_VCPUS" "${VM2_VCPUS}"
+	validate_pos_int_optional "DUAL_VM3_VCPUS" "${VM3_VCPUS}"
+	validate_pos_int_optional "DUAL_VM4_VCPUS" "${VM4_VCPUS}"
 	[ -x "${ROOT_DIR}/q-script/yifei-q" ] || die "missing qemu launcher: ${ROOT_DIR}/q-script/yifei-q"
 	[ -d "${LINUX_DIR}" ] || die "linux directory missing: ${LINUX_DIR}"
 	[ -f "${LINUX_DIR}/.config" ] || die "linux .config missing: ${LINUX_DIR}/.config"
@@ -342,6 +377,12 @@ ensure_session_container() {
 		-p "127.0.0.1:${VM2_HOST_SSH_PORT}:${VM2_INNER_SSH_PORT}" \
 		-p "127.0.0.1:${VM2_HOST_NET_PORT}:${VM2_INNER_NET_PORT}" \
 		-p "127.0.0.1:${VM2_HOST_GDB_PORT}:${VM2_INNER_GDB_PORT}" \
+		-p "127.0.0.1:${VM3_HOST_SSH_PORT}:${VM3_INNER_SSH_PORT}" \
+		-p "127.0.0.1:${VM3_HOST_NET_PORT}:${VM3_INNER_NET_PORT}" \
+		-p "127.0.0.1:${VM3_HOST_GDB_PORT}:${VM3_INNER_GDB_PORT}" \
+		-p "127.0.0.1:${VM4_HOST_SSH_PORT}:${VM4_INNER_SSH_PORT}" \
+		-p "127.0.0.1:${VM4_HOST_NET_PORT}:${VM4_INNER_NET_PORT}" \
+		-p "127.0.0.1:${VM4_HOST_GDB_PORT}:${VM4_INNER_GDB_PORT}" \
 		"${IMAGE_REF}" \
 		sleep infinity >/dev/null
 }
@@ -549,8 +590,10 @@ ip link del "${TAP_NAME}" 2>/dev/null || true
 
 stop_all() {
 	if container_running; then
-		stop_vm vm1 || true
-		stop_vm vm2 || true
+		local vm
+		for vm in vm1 vm2 vm3 vm4; do
+			stop_vm "${vm}" || true
+		done
 		log "removing session container '${SESSION_NAME}'"
 		docker rm -f "${SESSION_NAME}" >/dev/null 2>&1 || true
 	elif container_exists; then
@@ -568,7 +611,7 @@ show_status() {
 	fi
 
 	log "session: running (${SESSION_NAME})"
-	for vm in vm1 vm2; do
+	for vm in vm1 vm2 vm3 vm4; do
 		local pid
 		pid="$(vm_pid_in_container "${vm}" || true)"
 		if [ -n "${pid}" ]; then
@@ -610,22 +653,22 @@ main() {
 	local cmd="$1"
 	shift || true
 
-	case "${cmd}" in
-		start)
-			[ $# -eq 1 ] || die "usage: $(basename "$0") start vm1|vm2"
-			case "$1" in
-				vm1|vm2) ;;
-				*) die "unknown vm: $1" ;;
-			esac
+		case "${cmd}" in
+			start)
+				[ $# -eq 1 ] || die "usage: $(basename "$0") start vm1|vm2|vm3|vm4"
+				case "$1" in
+					vm1|vm2|vm3|vm4) ;;
+					*) die "unknown vm: $1" ;;
+				esac
 			ensure_prereqs
 			start_vm "$1"
 			;;
-		stop)
-			[ $# -eq 1 ] || die "usage: $(basename "$0") stop vm1|vm2|all"
-			case "$1" in
-				vm1|vm2)
-					stop_vm "$1"
-					;;
+			stop)
+				[ $# -eq 1 ] || die "usage: $(basename "$0") stop vm1|vm2|vm3|vm4|all"
+				case "$1" in
+					vm1|vm2|vm3|vm4)
+						stop_vm "$1"
+						;;
 				all)
 					stop_all
 					;;
@@ -637,32 +680,32 @@ main() {
 		status)
 			show_status
 			;;
-		ssh)
-			[ $# -ge 1 ] || die "usage: $(basename "$0") ssh vm1|vm2 [command...]"
-			case "$1" in
-				vm1|vm2) ;;
-				*) die "unknown vm: $1" ;;
-			esac
+			ssh)
+				[ $# -ge 1 ] || die "usage: $(basename "$0") ssh vm1|vm2|vm3|vm4 [command...]"
+				case "$1" in
+					vm1|vm2|vm3|vm4) ;;
+					*) die "unknown vm: $1" ;;
+				esac
 			ssh_vm "$@"
 			;;
-		wait-ssh)
-			[ $# -ge 1 ] || die "usage: $(basename "$0") wait-ssh vm1|vm2 [timeout]"
-			case "$1" in
-				vm1|vm2) ;;
-				*) die "unknown vm: $1" ;;
-			esac
+			wait-ssh)
+				[ $# -ge 1 ] || die "usage: $(basename "$0") wait-ssh vm1|vm2|vm3|vm4 [timeout]"
+				case "$1" in
+					vm1|vm2|vm3|vm4) ;;
+					*) die "unknown vm: $1" ;;
+				esac
 			if wait_ssh "$1" "${2:-${DEFAULT_WAIT_TIMEOUT}}"; then
 				log "$1 ssh ready"
 			else
 				die "$1 ssh wait timed out"
 			fi
 			;;
-		logs)
-			[ $# -ge 1 ] || die "usage: $(basename "$0") logs vm1|vm2 [tail_lines]"
-			case "$1" in
-				vm1|vm2) ;;
-				*) die "unknown vm: $1" ;;
-			esac
+			logs)
+				[ $# -ge 1 ] || die "usage: $(basename "$0") logs vm1|vm2|vm3|vm4 [tail_lines]"
+				case "$1" in
+					vm1|vm2|vm3|vm4) ;;
+					*) die "unknown vm: $1" ;;
+				esac
 			show_logs "$1" "${2:-120}"
 			;;
 		-h|--help|help)
