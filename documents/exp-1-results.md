@@ -1,100 +1,93 @@
-# Experiment 1 Results Report (Step 1 + Step 2: Direct Nginx vs Vanilla Katran)
+# Experiment 1 Results Report (Direct Nginx vs Vanilla Katran, wrk + wrk2)
 
 ## 1. 报告范围
 
-- 实验阶段：Experiment 1 完整基线（Step 1 + Step 2）
-- 运行 ID：`20260224T024240Z`
-- 运行日期（UTC）：2026-02-24
-- 对比路径：
-  1. `direct-nginx`: `vm2 (wrk) -> vm1 nginx (192.168.100.1:8080)`
-  2. `vanilla-katran`: `vm2 (wrk) -> VIP 192.168.100.100:8080 -> vm1 nginx`
+- 实验阶段：Experiment 1 baseline（Step 1 + Step 2）
+- 运行 ID：`20260225T014131Z`
+- 运行日期（UTC）：2026-02-25
+- 路径对比：
+  1. `direct-nginx`: `vm2 -> vm1 nginx (192.168.100.1:8080)`
+  2. `vanilla-katran`: `vm2 -> VIP 192.168.100.100:8080 -> vm1 nginx`
+- 工作负载：`wrk` + `wrk2`（不含 httperf）
 
-本报告基于该次完整 run 的最新结果，覆盖 direct 与 vanilla-katran 的对照结论。
+## 2. 本次配置
 
-## 2. 实验配置（本次 run）
+- `wrk`（closed-loop）：
+  - connections: `1 2 4 8 16 32 64 128 256`
+  - threads: `4`
+  - warmup / duration / repeats: `15s / 60s / 5`
+- `wrk2`（open-loop）：
+  - target rates: `50000 100000 150000 200000 250000 300000 350000 400000 450000 500000`
+  - threads / connections: `4 / 256`
+  - warmup / duration / repeats: `15s / 60s / 5`
+- pinning：
+  - host: vm1/vm2 `auto`
+  - guest: `nginx=0-3`, `wrk=0-3`, `wrk2=0-3`, `katran=0-3`
 
-- 工具：`wrk`
-- 并发 sweep：`1 2 4 8 16 32 64 128 256`
-- 线程数：`4`（每点实际 `min(4, connections)`）
-- warmup：`15s`
-- measure：`60s`
-- repeats：`5`
-- 每条路径共 `45` 个测量点（`9 * 5`）
-- CPU pinning：
-  - host: `DUAL_VM1_HOST_CPUSET=auto`, `DUAL_VM2_HOST_CPUSET=auto`
-  - guest: `EXP1_NGINX_CPUSET=0-3`, `EXP1_WRK_CPUSET=0-3`, `EXP1_KATRAN_CPUSET=0-3`
-- Katran 参数（Step 2）：VIP `192.168.100.100`，gRPC `50051`，forwarding cores `0,1,2,3`
+## 3. 数据质量检查
 
-## 3. 结果总览
+- `wrk`：direct/katran 各 `45` 个样本点（`9 * 5`），`max_non2xx=0`, `max_socket_timeouts=0`
+- `wrk2`：direct/katran 各 `50` 个样本点（`10 * 5`），`max_non2xx=0`, `max_socket_timeouts=0`
 
-### 3.1 数据质量
+本次结果可用于对比分析。
 
-- `direct-nginx/wrk-summary.csv`：46 行（1 表头 + 45 测量）
-- `vanilla-katran/wrk-summary.csv`：46 行（1 表头 + 45 测量）
-- 两条路径均为：
-  - `max_non2xx = 0`
-  - `max_socket_timeouts = 0`
+## 4. Part A - wrk 结果（closed-loop）
 
-说明本次结果有效，没有明显功能错误/超时污染。
-
-### 3.2 关键对比（聚合均值）
-
-| connections | direct RPS | katran RPS | RPS 差值 | direct p99 (ms) | katran p99 (ms) | p99 差值 |
+| connections | direct RPS | katran RPS | katran vs direct | direct p99 (ms) | katran p99 (ms) | katran vs direct |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 7267 | 7189 | -1.08% | 0.1540 | 0.1632 | +5.97% |
-| 2 | 14797 | 15482 | +4.63% | 0.1536 | 0.1566 | +1.95% |
-| 4 | 44283 | 42265 | -4.56% | 0.1304 | 0.1340 | +2.76% |
-| 8 | 107205 | 104494 | -2.53% | 0.1136 | 0.1168 | +2.82% |
-| 16 | 170372 | 167997 | -1.39% | 0.1486 | 0.1528 | +2.83% |
-| 32 | 224081 | 222399 | -0.75% | 0.2210 | 0.2246 | +1.63% |
-| 64 | 252214 | 249242 | -1.18% | 0.3768 | 0.3878 | +2.92% |
-| 128 | 273289 | 268430 | -1.78% | 0.7086 | 0.7282 | +2.77% |
-| 256 | 280383 | 277672 | -0.97% | 1.1460 | 1.1960 | +4.36% |
+| 1 | 7880 | 7431 | -5.70% | 0.1558 | 0.1604 | +2.95% |
+| 2 | 16314 | 16557 | +1.49% | 0.1502 | 0.1506 | +0.27% |
+| 4 | 45288 | 43038 | -4.97% | 0.1282 | 0.1308 | +2.03% |
+| 8 | 107400 | 103946 | -3.22% | 0.1134 | 0.1166 | +2.82% |
+| 16 | 170079 | 167460 | -1.54% | 0.1480 | 0.1532 | +3.51% |
+| 32 | 224100 | 221166 | -1.31% | 0.2202 | 0.2252 | +2.27% |
+| 64 | 251348 | 245984 | -2.13% | 0.3770 | 0.3990 | +5.84% |
+| 128 | 272147 | 265373 | -2.49% | 0.7194 | 0.7416 | +3.09% |
+| 256 | 279078 | 272833 | -2.24% | 1.1500 | 1.2000 | +4.35% |
 
-整体统计（9 个并发点平均）：
+wrk 总体结论（9 点平均）：
 
-- 平均 RPS 变化：`-1.07%`（Katran 相对 Direct）
-- 平均 p99 变化：`+3.11%`
+- RPS：`-2.456%`（katran 相对 direct）
+- p99：`+3.014%`（katran 相对 direct）
 
-中高并发（`c >= 16`）更有代表性：
+解读：`wrk` 下 Katran 有稳定小幅开销，量级约“吞吐 -2.5%，p99 +3%”。
 
-- 平均 RPS 变化：`-1.21%`
-- 平均 p99 变化：`+2.90%`
+## 5. Part B - wrk2 结果（open-loop）
 
-峰值点（`c=256`）：
+| target rate | direct RPS | katran RPS | direct/target | katran/target | direct p99 (ms) | katran p99 (ms) |
+|---:|---:|---:|---:|---:|---:|---:|
+| 50000 | 49267 | 49515 | 98.5% | 99.0% | 3.5 | 3.3 |
+| 100000 | 99382 | 99171 | 99.4% | 99.2% | 3.0 | 3.1 |
+| 150000 | 149285 | 148967 | 99.5% | 99.3% | 2.8 | 2.8 |
+| 200000 | 198764 | 198765 | 99.4% | 99.4% | 2.9 | 2.9 |
+| 250000 | 248628 | 248454 | 99.5% | 99.4% | 3.0 | 9.1 |
+| 300000 | 277876 | 271796 | 92.6% | 90.6% | 4364.0 | 5568.0 |
+| 350000 | 278282 | 272043 | 79.5% | 77.7% | 11986.0 | 13036.0 |
+| 400000 | 278268 | 272948 | 69.6% | 68.2% | 17934.0 | 18774.0 |
+| 450000 | 279156 | 273508 | 62.0% | 60.8% | 22434.0 | 22966.0 |
+| 500000 | 277915 | 273368 | 55.6% | 54.7% | 26170.0 | 26636.0 |
 
-- Direct：`280382.862 RPS`, `p99=1.1460ms`
-- Vanilla Katran：`277671.660 RPS`, `p99=1.1960ms`
-- 差值：RPS `-0.97%`, p99 `+4.36%`
+wrk2 总体结论：
 
-## 4. 结果解读（我对这次结果的看法）
+- 全部 10 点平均：RPS `-0.999%`, p99 `+24.787%`
+- 仅过载区（`>=300k`）平均：RPS `-2.000%`, p99 `+9.037%`
 
-1. 结果整体是“健康且可解释”的。  
-Direct 大多数点吞吐更高、延迟更低，符合“引入 Katran 路径会增加一些开销”的预期方向。
+解读：
 
-2. 开销量级不大，但在中高并发上是稳定存在的。  
-`c>=16` 区间里，Katran 基本都表现为约 `1%` 级吞吐损失和约 `3%` 级 p99 增加，这足够作为 Exp2/Exp3 的优化基线。
+1. `<=250k` 基本能跟上目标速率（~99%），延迟在毫秒级。
+2. `300k` 开始进入瓶颈区，吞吐平台约 `278k`（direct）和 `272-273k`（katran），p99 上升到秒级。
+3. 在瓶颈区，katran 相对 direct 仍有约 `2%` 吞吐差距和约 `9%` 的 p99 差距。
 
-3. 低并发局部反常（例如 `c=2` Katran RPS 略高）可以视为统计抖动。  
-该点差异与单点波动量级接近，不改变整体趋势判读；而中高并发差异方向一致。
+## 6. 综合结论
 
-4. CPU 利用率曲线两条路径非常接近。  
-这说明当前开销主要体现在端到端吞吐/延迟，而不是简单表现为“某一侧 CPU 明显更高”。
+1. `wrk` 与 `wrk2` 的方向一致：vanilla-katran 相对 direct-nginx 存在稳定开销。
+2. 这个开销在非过载区不大，但在接近/超过瓶颈后，p99 差距会被放大。
+3. 本次 run 已可作为 Exp2/Exp3 的基线数据。
 
-## 5. 图表与产物
+## 7. 产物路径
 
-- direct 运行目录：`results/exp1/20260224T024240Z-direct-nginx`
-- katran 运行目录：`results/exp1/20260224T024240Z-vanilla-katran`
-- 对比目录：`results/exp1/20260224T024240Z-comparison`
-- 对比图：`results/exp1/20260224T024240Z-comparison/plots/wrk-direct-vs-katran.png`
-- 对比表：`results/exp1/20260224T024240Z-comparison/comparison-summary.csv`
-
-## 6. 结论与下一步
-
-Exp1（Step1+Step2）状态：**完成**。  
-当前 baseline 已经具备进入 Exp2（Oracle hard-code）所需的对照基础。
-
-建议 Exp2 重点观察：
-
-1. `c=64~256` 的 RPS 与 p99 改善幅度（最能体现是否回收 Katran 基线开销）。
-2. 保持与本次完全一致的 wrk 参数与 pinning，确保对照可复现。
+- direct：`results/exp1/20260225T014131Z-direct-nginx`
+- katran：`results/exp1/20260225T014131Z-vanilla-katran`
+- comparison：`results/exp1/20260225T014131Z-comparison`
+- wrk 对比图：`results/exp1/20260225T014131Z-comparison/plots/wrk-direct-vs-katran.png`
+- wrk2 对比图：`results/exp1/20260225T014131Z-comparison/plots/wrk2-direct-vs-katran.png`
