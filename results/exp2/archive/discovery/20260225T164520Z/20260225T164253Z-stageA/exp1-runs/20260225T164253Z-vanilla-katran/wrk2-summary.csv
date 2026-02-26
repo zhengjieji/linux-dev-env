@@ -1,0 +1,1 @@
+timestamp,target_rate,repeat,requests_per_sec,latency_avg_ms,latency_stdev_ms,p99_ms,non2xx_responses,socket_timeouts,vm1_cpu_util_pct,vm2_cpu_util_pct

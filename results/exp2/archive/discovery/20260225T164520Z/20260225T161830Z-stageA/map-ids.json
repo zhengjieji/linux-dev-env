@@ -1,0 +1,313 @@
+{
+  "balancer_program": {
+    "id": 6,
+    "map_ids": [
+      5,
+      7,
+      9,
+      8,
+      15,
+      11,
+      22,
+      6,
+      12,
+      10,
+      18,
+      20,
+      14,
+      13
+    ],
+    "name": "balancer_ingress",
+    "tag": "cf7421112865bdca",
+    "type": "xdp"
+  },
+  "dump_policy": {
+    "max_map_dump_entries": 1000000,
+    "skip_large_map_dumps": true,
+    "skipped_maps": [
+      {
+        "id": 10,
+        "max_entries": 33554944,
+        "name": "ch_rings",
+        "reason": "max_entries>1000000"
+      },
+      {
+        "id": 18,
+        "max_entries": 16777214,
+        "name": "server_id_map",
+        "reason": "max_entries>1000000"
+      }
+    ]
+  },
+  "duplicates": {},
+  "missing": [],
+  "selected_map_ids": {
+    "ch_rings": 10,
+    "ctl_array": 6,
+    "fallback_cache": 8,
+    "lru_mapping": 9,
+    "lru_miss_stats": 13,
+    "quic_stats_map": 15,
+    "reals": 11,
+    "reals_stats": 12,
+    "server_id_map": 18,
+    "server_id_stats": 20,
+    "stats": 5,
+    "vip_map": 7,
+    "vip_miss_stats": 14,
+    "vip_to_down_rea": 22
+  },
+  "selected_maps": [
+    {
+      "dump_eligible": false,
+      "id": 10,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 268439816,
+        "bytes_value": 4,
+        "flags": 0,
+        "frozen": 0,
+        "id": 10,
+        "max_entries": 33554944,
+        "name": "ch_rings",
+        "type": "array"
+      },
+      "name": "ch_rings",
+      "skip_reason": "max_entries>1000000"
+    },
+    {
+      "dump_eligible": true,
+      "id": 6,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 392,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 6,
+        "max_entries": 16,
+        "name": "ctl_array",
+        "type": "array"
+      },
+      "name": "ctl_array",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 8,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 40,
+        "bytes_memlock": 121344,
+        "bytes_value": 16,
+        "flags": 0,
+        "frozen": 0,
+        "id": 8,
+        "max_entries": 1000,
+        "name": "fallback_cache",
+        "type": "lru_hash"
+      },
+      "name": "fallback_cache",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 9,
+      "map_info": {
+        "bytes_key": 4,
+        "bytes_memlock": 1288,
+        "bytes_value": 4,
+        "flags": 0,
+        "frozen": 0,
+        "id": 9,
+        "max_entries": 128,
+        "name": "lru_mapping",
+        "type": "array_of_maps"
+      },
+      "name": "lru_mapping",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 13,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 164104,
+        "bytes_value": 4,
+        "flags": 0,
+        "frozen": 0,
+        "id": 13,
+        "max_entries": 4096,
+        "name": "lru_miss_stats",
+        "type": "percpu_array"
+      },
+      "name": "lru_miss_stats",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 15,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 688,
+        "bytes_value": 104,
+        "flags": 0,
+        "frozen": 0,
+        "id": 15,
+        "max_entries": 1,
+        "name": "quic_stats_map",
+        "type": "percpu_array"
+      },
+      "name": "quic_stats_map",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 11,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 98568,
+        "bytes_value": 20,
+        "flags": 0,
+        "frozen": 0,
+        "id": 11,
+        "max_entries": 4096,
+        "name": "reals",
+        "type": "array"
+      },
+      "name": "reals",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 12,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 295176,
+        "bytes_value": 16,
+        "flags": 0,
+        "frozen": 0,
+        "id": 12,
+        "max_entries": 4096,
+        "name": "reals_stats",
+        "type": "percpu_array"
+      },
+      "name": "reals_stats",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": false,
+      "id": 18,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 134217976,
+        "bytes_value": 4,
+        "flags": 0,
+        "frozen": 0,
+        "id": 18,
+        "max_entries": 16777214,
+        "name": "server_id_map",
+        "type": "array"
+      },
+      "name": "server_id_map",
+      "skip_reason": "max_entries>1000000"
+    },
+    {
+      "dump_eligible": true,
+      "id": 20,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 37128,
+        "bytes_value": 16,
+        "flags": 0,
+        "frozen": 0,
+        "id": 20,
+        "max_entries": 512,
+        "name": "server_id_stats",
+        "type": "percpu_array"
+      },
+      "name": "server_id_stats",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 5,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 73992,
+        "bytes_value": 16,
+        "flags": 0,
+        "frozen": 0,
+        "id": 5,
+        "max_entries": 1024,
+        "name": "stats",
+        "type": "percpu_array"
+      },
+      "name": "stats",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 7,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 20,
+        "bytes_memlock": 50464,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 7,
+        "max_entries": 512,
+        "name": "vip_map",
+        "type": "hash"
+      },
+      "name": "vip_map",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 14,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 288,
+        "bytes_value": 20,
+        "flags": 0,
+        "frozen": 0,
+        "id": 14,
+        "max_entries": 1,
+        "name": "vip_miss_stats",
+        "type": "array"
+      },
+      "name": "vip_miss_stats",
+      "skip_reason": ""
+    },
+    {
+      "dump_eligible": true,
+      "id": 22,
+      "map_info": {
+        "bytes_key": 20,
+        "bytes_memlock": 9152,
+        "bytes_value": 4,
+        "flags": 1,
+        "frozen": 0,
+        "id": 22,
+        "max_entries": 512,
+        "name": "vip_to_down_rea",
+        "type": "hash_of_maps"
+      },
+      "name": "vip_to_down_rea",
+      "skip_reason": ""
+    }
+  ],
+  "selection_mode": "all-from-program"
+}

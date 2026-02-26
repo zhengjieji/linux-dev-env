@@ -1,0 +1,15 @@
+map_name,map_id,samples_total,samples_present,samples_missing,unique_map_hashes,map_invariant,map_hash,entry_keys_union,entry_keys_present_in_all_samples,invariant_entries,sampling_mode,hash_only_samples,hash_method,final_dump_used,final_dump_hash_match,analysis_status,policy_reason
+ch_rings,10,1,1,0,1,1,9df258f67bbbd50a831890254ef1e904c976194cabe5cc285e57d4472bc24b9f,0,0,0,hash_only,1,raw_json_sha256,0,0,analyzed,max_entries>1000000
+ctl_array,6,1,1,0,1,1,67d2c65bc8753d3889cee0633888ec0abc1d2bce3130046193557230dcd6de6a,16,16,16,dump,0,,0,0,analyzed,
+fallback_cache,8,1,1,0,1,1,4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945,0,0,0,dump,0,,0,0,analyzed,
+lru_mapping,9,1,1,0,1,1,1d1ec78b21d4695cc1f78e038188bdd7b0d022ad559a207e1a0e72775102d752,4,4,4,dump,0,,0,0,analyzed,
+lru_miss_stats,13,1,1,0,1,1,6c3457cd43b9db3c3ea399870dcae8b98e18c7659c0fde18398aee1a584222b9,0,0,0,dump,0,,0,0,analyzed,
+quic_stats_map,15,1,1,0,1,1,cc0c3c88ca3449d88a5b95d2e333ef80f06ed6834fa31ac6b68179c3670692eb,0,0,0,dump,0,,0,0,analyzed,
+reals,11,1,1,0,1,1,99cc839b182296b43bc97fc58b5ada4b1dce9f3331f5a8cc02c0caf119fbfaf7,4096,4096,4096,dump,0,,0,0,analyzed,
+reals_stats,12,1,1,0,1,1,c3ad8a45f3e5870006120ef27318d786ca5446898147f4b223607ff0578ff0da,0,0,0,dump,0,,0,0,analyzed,
+server_id_map,18,1,0,1,0,0,,0,0,0,hash_only,0,,0,0,analyzed,max_entries>1000000
+server_id_stats,20,1,1,0,1,1,f1bcc91c870850679659a66d93807487c1c6cfe352df94621b4b59efebb3ddc3,0,0,0,dump,0,,0,0,analyzed,
+stats,5,1,1,0,1,1,ef97652230c005a072ccc61fc9dc8b71fe153c88ad355558f6202e6e23c80a7d,0,0,0,dump,0,,0,0,analyzed,
+vip_map,7,1,1,0,1,1,442c4fa9ab95379a225be5bb0c23339c79047bfaf955bf4d7a0eb90b146d7e7b,1,1,1,dump,0,,0,0,analyzed,
+vip_miss_stats,14,1,1,0,1,1,b1c6e9780504266d3d47a25dffbff6fbbf8d303273531a393113e734155110e5,1,1,1,dump,0,,0,0,analyzed,
+vip_to_down_rea,22,1,1,0,1,1,4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945,0,0,0,dump,0,,0,0,analyzed,

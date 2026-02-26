@@ -1,0 +1,14 @@
+[exp1] --keep-vms enabled, leaving dual VMs running
+Running 24s test @ http://192.168.100.100:8080/exp1-1k.txt
+  4 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   262.80us   93.26us   3.41ms   90.37%
+    Req/Sec    60.76k     5.02k   69.36k    72.03%
+  Latency Distribution
+     50%  250.00us
+     75%  287.00us
+     90%  337.00us
+     99%  467.00us
+  4281741 requests in 24.02s, 5.08GB read
+Requests/sec: 178287.27
+Transfer/sec:    216.44MB

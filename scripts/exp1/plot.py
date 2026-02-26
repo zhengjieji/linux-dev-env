@@ -328,12 +328,16 @@ def plot_single_dataset(run_dir: Path, plots_dir: Path, data, figure_tag: str, t
     ax_rps.set_title(throughput_title)
     ax_rps.set_xlabel(data["x_label"])
     ax_rps.set_ylabel("Requests/sec")
+    ax_rps.set_xlim(left=0)
+    ax_rps.set_ylim(bottom=0)
     ax_rps.grid(True, linestyle="--", alpha=0.4)
 
     ax_lat.errorbar(x_vals, lat_vals, yerr=lat_std, marker="o", linewidth=2, color="tab:orange", capsize=3)
     ax_lat.set_title(latency_title)
     ax_lat.set_xlabel(data["x_label"])
     ax_lat.set_ylabel(data["lat_label"])
+    ax_lat.set_xlim(left=0)
+    ax_lat.set_ylim(bottom=0)
     ax_lat.grid(True, linestyle="--", alpha=0.4)
 
     if data["has_vm_util"] and ax_vm1 is not None and ax_vm2 is not None:
@@ -349,6 +353,7 @@ def plot_single_dataset(run_dir: Path, plots_dir: Path, data, figure_tag: str, t
         ax_vm1.set_title("vm1 CPU Utilization")
         ax_vm1.set_xlabel(data["x_label"])
         ax_vm1.set_ylabel("CPU util (%)")
+        ax_vm1.set_xlim(left=0)
         ax_vm1.set_ylim(0, 100)
         ax_vm1.grid(True, linestyle="--", alpha=0.4)
 
@@ -364,6 +369,7 @@ def plot_single_dataset(run_dir: Path, plots_dir: Path, data, figure_tag: str, t
         ax_vm2.set_title("vm2 CPU Utilization")
         ax_vm2.set_xlabel(data["x_label"])
         ax_vm2.set_ylabel("CPU util (%)")
+        ax_vm2.set_xlim(left=0)
         ax_vm2.set_ylim(0, 100)
         ax_vm2.grid(True, linestyle="--", alpha=0.4)
 
@@ -416,6 +422,8 @@ def plot_compare_dataset(
     ax_rps.set_title(throughput_title)
     ax_rps.set_xlabel(x_label)
     ax_rps.set_ylabel("Requests/sec")
+    ax_rps.set_xlim(left=0)
+    ax_rps.set_ylim(bottom=0)
     ax_rps.grid(True, linestyle="--", alpha=0.4)
     ax_rps.legend()
 
@@ -440,6 +448,8 @@ def plot_compare_dataset(
     ax_lat.set_title(latency_title)
     ax_lat.set_xlabel(x_label)
     ax_lat.set_ylabel(latency_label)
+    ax_lat.set_xlim(left=0)
+    ax_lat.set_ylim(bottom=0)
     ax_lat.grid(True, linestyle="--", alpha=0.4)
     ax_lat.legend()
 

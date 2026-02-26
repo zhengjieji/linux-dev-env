@@ -1,0 +1,60 @@
+[exp1] run id: 20260225T165512Z
+[exp1] mode: katran
+[exp1] workloads: wrk
+[exp1] run kinds: vanilla-katran
+[exp1] active VMs: vm1 vm2
+[exp1] httperf clients: none (workers_per_vm=1, ulimit_nofile=off)
+[exp1] vm shape: vm1(vcpus=4, mem_mb=4096), vm2(vcpus=4, mem_mb=4096), vm3(vcpus=4, mem_mb=4096), vm4(vcpus=4, mem_mb=4096)
+[exp1] cpu pinning: host(vm1=auto, vm2=auto, vm3=auto, vm4=auto), guest(nginx=0-3, wrk=0-3, wrk2=0-3, httperf=0-3, katran=0-3)
+[exp1] resetting any previous dual-vm session
+[exp1] starting vm1
+make[1]: Entering directory '/home/zhengjie/github/local/nginx-exp'
+LINUX_DIR=/home/zhengjie/github/local/nginx-exp/linux RUNTIME_IMAGE=zhengjie-dual-vm \
+DUAL_VM1_SSH_PORT=53022 DUAL_VM1_NET_PORT=53023 DUAL_VM1_GDB_PORT=1311 \
+DUAL_VM2_SSH_PORT=53122 DUAL_VM2_NET_PORT=53123 DUAL_VM2_GDB_PORT=1312 \
+DUAL_VM3_SSH_PORT=53222 DUAL_VM3_NET_PORT=53223 DUAL_VM3_GDB_PORT=1313 \
+DUAL_VM4_SSH_PORT=53322 DUAL_VM4_NET_PORT=53323 DUAL_VM4_GDB_PORT=1314 \
+DUAL_VM1_HOST_CPUSET=auto DUAL_VM2_HOST_CPUSET=auto DUAL_VM3_HOST_CPUSET=auto DUAL_VM4_HOST_CPUSET=auto \
+DUAL_VM1_MEMORY_MB=4096 DUAL_VM2_MEMORY_MB=4096 DUAL_VM3_MEMORY_MB=4096 DUAL_VM4_MEMORY_MB=4096 \
+DUAL_VM1_VCPUS=4 DUAL_VM2_VCPUS=4 DUAL_VM3_VCPUS=4 DUAL_VM4_VCPUS=4 \
+/home/zhengjie/github/local/nginx-exp/scripts/dual-vm.sh start vm1
+[dual-vm] auto host cpu pinning resolved: vm1=0,4,8,12,16,20, vm2=1,5,9,13,17,21, vm3=2,6,10,14,18,22, vm4=3,7,11,15,19,23
+[dual-vm] pinning vm1 QEMU to host CPUs 0,4,8,12,16,20
+[dual-vm] launch config vm1: vcpus=4 memory_mb=4096
+[dual-vm] starting session container 'dual-vm-session'
+[dual-vm] started vm1; waiting for SSH on localhost:53022
+[dual-vm] vm1 is ready
+make[1]: Leaving directory '/home/zhengjie/github/local/nginx-exp'
+[exp1] starting vm2
+make[1]: Entering directory '/home/zhengjie/github/local/nginx-exp'
+LINUX_DIR=/home/zhengjie/github/local/nginx-exp/linux RUNTIME_IMAGE=zhengjie-dual-vm \
+DUAL_VM1_SSH_PORT=53022 DUAL_VM1_NET_PORT=53023 DUAL_VM1_GDB_PORT=1311 \
+DUAL_VM2_SSH_PORT=53122 DUAL_VM2_NET_PORT=53123 DUAL_VM2_GDB_PORT=1312 \
+DUAL_VM3_SSH_PORT=53222 DUAL_VM3_NET_PORT=53223 DUAL_VM3_GDB_PORT=1313 \
+DUAL_VM4_SSH_PORT=53322 DUAL_VM4_NET_PORT=53323 DUAL_VM4_GDB_PORT=1314 \
+DUAL_VM1_HOST_CPUSET=auto DUAL_VM2_HOST_CPUSET=auto DUAL_VM3_HOST_CPUSET=auto DUAL_VM4_HOST_CPUSET=auto \
+DUAL_VM1_MEMORY_MB=4096 DUAL_VM2_MEMORY_MB=4096 DUAL_VM3_MEMORY_MB=4096 DUAL_VM4_MEMORY_MB=4096 \
+DUAL_VM1_VCPUS=4 DUAL_VM2_VCPUS=4 DUAL_VM3_VCPUS=4 DUAL_VM4_VCPUS=4 \
+/home/zhengjie/github/local/nginx-exp/scripts/dual-vm.sh start vm2
+[dual-vm] auto host cpu pinning resolved: vm1=0,4,8,12,16,20, vm2=1,5,9,13,17,21, vm3=2,6,10,14,18,22, vm4=3,7,11,15,19,23
+[dual-vm] pinning vm2 QEMU to host CPUs 1,5,9,13,17,21
+[dual-vm] launch config vm2: vcpus=4 memory_mb=4096
+[dual-vm] started vm2; waiting for SSH on localhost:53122
+[dual-vm] vm2 is ready
+make[1]: Leaving directory '/home/zhengjie/github/local/nginx-exp'
+[exp1] preparing vm2 client tools
+[exp1] [vanilla-katran] preparing vm1 server (nginx)
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+[exp1] [vanilla-katran] preparing vm1 vanilla-katran
+installing packages: libgoogle-glog-dev libgflags-dev libfmt-dev libdouble-conversion-dev libevent-dev libboost-program-options-dev
+[exp1] [vanilla-katran] running sanity checks
+[exp1] [vanilla-katran] collecting metadata
+[exp1][vanilla-katran] progress 0/1 (0%) elapsed 00:00:00 eta 00:25:05 | wrk c=256 t=4 repeat=1/1
+[exp1][vanilla-katran] progress 1/1 (100%) elapsed 00:25:05 eta 00:00:00 | wrk c=256 t=4 repeat=1/1
+[exp1] [vanilla-katran] plot generation skipped (--no-plot)
+[exp1] [vanilla-katran] complete
+[exp1] [vanilla-katran] artifacts: /home/zhengjie/github/local/nginx-exp/results/exp2/discovery/20260225T165512Z-stageA/exp1-runs/20260225T165512Z-vanilla-katran
+[exp1] experiment complete
+[exp1] artifacts: /home/zhengjie/github/local/nginx-exp/results/exp2/discovery/20260225T165512Z-stageA/exp1-runs/20260225T165512Z-vanilla-katran
+[exp1] --keep-vms enabled, leaving dual VMs running

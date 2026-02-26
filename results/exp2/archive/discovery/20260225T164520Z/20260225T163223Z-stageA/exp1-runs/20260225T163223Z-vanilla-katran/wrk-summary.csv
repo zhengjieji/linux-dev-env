@@ -1,0 +1,2 @@
+timestamp,connections,repeat,requests_per_sec,latency_avg_ms,latency_stdev_ms,p99_ms,non2xx_responses,socket_timeouts,vm1_cpu_util_pct,vm2_cpu_util_pct
+2026-02-25T16:33:27Z,64,1,243538.63,0.271010,0.169250,0.880000,0,0,69.304338,29.338356

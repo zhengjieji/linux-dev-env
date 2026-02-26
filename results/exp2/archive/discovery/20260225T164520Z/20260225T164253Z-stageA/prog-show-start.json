@@ -1,0 +1,1 @@
+[{"id":6,"type":"xdp","name":"balancer_ingress","tag":"cf7421112865bdca","gpl_compatible":true,"loaded_at":1772037820,"uid":0,"orphaned":false,"bytes_xlated":24568,"jited":true,"bytes_jited":13897,"bytes_memlock":28672,"map_ids":[5,7,9,8,15,11,22,6,12,10,18,20,14,13],"btf_id":12}]

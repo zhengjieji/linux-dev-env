@@ -1,0 +1,1450 @@
+{
+  "format_version": 3,
+  "generated_at_utc": "2026-02-25T16:37:40Z",
+  "map_summary": [
+    {
+      "analysis_status": "analyzed",
+      "entry_keys_present_in_all_samples": 0,
+      "entry_keys_union": 0,
+      "final_dump_hash_match": 1,
+      "final_dump_used": 1,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "invariant_entries": 0,
+      "map_hash": "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f",
+      "map_id": 6,
+      "map_invariant": 1,
+      "map_name": "ctl_array",
+      "policy_reason": "max_entries>1",
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only",
+      "unique_map_hashes": 1
+    },
+    {
+      "analysis_status": "analyzed",
+      "entry_keys_present_in_all_samples": 0,
+      "entry_keys_union": 0,
+      "final_dump_hash_match": 1,
+      "final_dump_used": 1,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "invariant_entries": 0,
+      "map_hash": "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe",
+      "map_id": 7,
+      "map_invariant": 1,
+      "map_name": "vip_map",
+      "policy_reason": "max_entries>1",
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only",
+      "unique_map_hashes": 1
+    }
+  ],
+  "maps": [
+    {
+      "analysis_status": "analyzed",
+      "entry_analysis": {
+        "entry_keys_present_in_all_samples": 0,
+        "entry_keys_union": 0,
+        "invariant_entries": [],
+        "invariant_entry_count": 0
+      },
+      "final_dump_file": "/home/zhengjie/github/local/nginx-exp/results/exp2/discovery/20260225T163642Z-stageA/final-dumps/ctl_array.json",
+      "final_dump_hash_match": true,
+      "final_dump_used": true,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "map_hash": "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f",
+      "map_hashes": [
+        "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f"
+      ],
+      "map_id": 6,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 392,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 6,
+        "max_entries": 16,
+        "name": "ctl_array",
+        "type": "array"
+      },
+      "map_invariant": true,
+      "map_value": [
+        {
+          "formatted": {
+            "key": 0,
+            "value": {
+              "": {
+                "ifindex": 2852148306,
+                "mac": [
+                  82,
+                  84,
+                  0,
+                  170,
+                  0,
+                  34
+                ],
+                "value": 37386247492690
+              }
+            }
+          },
+          "key": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x52",
+            "0x54",
+            "0x00",
+            "0xaa",
+            "0x00",
+            "0x22",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 1,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x01",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 2,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x02",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 3,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x03",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 4,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x04",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 5,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x05",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 6,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x06",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 7,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x07",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 8,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x08",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 9,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x09",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 10,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0a",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 11,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0b",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 12,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0c",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 13,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0d",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 14,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0e",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        },
+        {
+          "formatted": {
+            "key": 15,
+            "value": {
+              "": {
+                "ifindex": 0,
+                "mac": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "value": 0
+              }
+            }
+          },
+          "key": [
+            "0x0f",
+            "0x00",
+            "0x00",
+            "0x00"
+          ],
+          "value": [
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        }
+      ],
+      "missing_sample_names": [],
+      "name": "ctl_array",
+      "policy_reason": "max_entries>1",
+      "present_sample_names": [
+        "sample-000",
+        "sample-001"
+      ],
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only"
+    },
+    {
+      "analysis_status": "analyzed",
+      "entry_analysis": {
+        "entry_keys_present_in_all_samples": 0,
+        "entry_keys_union": 0,
+        "invariant_entries": [],
+        "invariant_entry_count": 0
+      },
+      "final_dump_file": "/home/zhengjie/github/local/nginx-exp/results/exp2/discovery/20260225T163642Z-stageA/final-dumps/vip_map.json",
+      "final_dump_hash_match": true,
+      "final_dump_used": true,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "map_hash": "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe",
+      "map_hashes": [
+        "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe"
+      ],
+      "map_id": 7,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 20,
+        "bytes_memlock": 50464,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 7,
+        "max_entries": 512,
+        "name": "vip_map",
+        "type": "hash"
+      },
+      "map_invariant": true,
+      "map_value": [
+        {
+          "formatted": {
+            "key": {
+              "": {
+                "vip": 1684318400,
+                "vipv6": [
+                  1684318400,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "port": 36895,
+              "proto": 6
+            },
+            "value": {
+              "flags": 32,
+              "vip_num": 0
+            }
+          },
+          "key": [
+            "0xc0",
+            "0xa8",
+            "0x64",
+            "0x64",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x1f",
+            "0x90",
+            "0x06",
+            "0x00"
+          ],
+          "value": [
+            "0x20",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00",
+            "0x00"
+          ]
+        }
+      ],
+      "missing_sample_names": [],
+      "name": "vip_map",
+      "policy_reason": "max_entries>1",
+      "present_sample_names": [
+        "sample-000",
+        "sample-001"
+      ],
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only"
+    }
+  ],
+  "oracle_candidates": {
+    "entry_level_invariant_map_count": 0,
+    "entry_level_invariants": [],
+    "map_level_invariant_count": 2,
+    "map_level_invariants": [
+      {
+        "map_hash": "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f",
+        "map_id": 6,
+        "map_info": {
+          "btf_id": 12,
+          "bytes_key": 4,
+          "bytes_memlock": 392,
+          "bytes_value": 8,
+          "flags": 0,
+          "frozen": 0,
+          "id": 6,
+          "max_entries": 16,
+          "name": "ctl_array",
+          "type": "array"
+        },
+        "map_name": "ctl_array",
+        "sampling_mode": "hash_only",
+        "value": [
+          {
+            "formatted": {
+              "key": 0,
+              "value": {
+                "": {
+                  "ifindex": 2852148306,
+                  "mac": [
+                    82,
+                    84,
+                    0,
+                    170,
+                    0,
+                    34
+                  ],
+                  "value": 37386247492690
+                }
+              }
+            },
+            "key": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x52",
+              "0x54",
+              "0x00",
+              "0xaa",
+              "0x00",
+              "0x22",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 1,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x01",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 2,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x02",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 3,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x03",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 4,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x04",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 5,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x05",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 6,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x06",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 7,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x07",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 8,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x08",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 9,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x09",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 10,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0a",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 11,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0b",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 12,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0c",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 13,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0d",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 14,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0e",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          },
+          {
+            "formatted": {
+              "key": 15,
+              "value": {
+                "": {
+                  "ifindex": 0,
+                  "mac": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "value": 0
+                }
+              }
+            },
+            "key": [
+              "0x0f",
+              "0x00",
+              "0x00",
+              "0x00"
+            ],
+            "value": [
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          }
+        ]
+      },
+      {
+        "map_hash": "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe",
+        "map_id": 7,
+        "map_info": {
+          "btf_id": 12,
+          "bytes_key": 20,
+          "bytes_memlock": 50464,
+          "bytes_value": 8,
+          "flags": 0,
+          "frozen": 0,
+          "id": 7,
+          "max_entries": 512,
+          "name": "vip_map",
+          "type": "hash"
+        },
+        "map_name": "vip_map",
+        "sampling_mode": "hash_only",
+        "value": [
+          {
+            "formatted": {
+              "key": {
+                "": {
+                  "vip": 1684318400,
+                  "vipv6": [
+                    1684318400,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                "port": 36895,
+                "proto": 6
+              },
+              "value": {
+                "flags": 32,
+                "vip_num": 0
+              }
+            },
+            "key": [
+              "0xc0",
+              "0xa8",
+              "0x64",
+              "0x64",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x1f",
+              "0x90",
+              "0x06",
+              "0x00"
+            ],
+            "value": [
+              "0x20",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00",
+              "0x00"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sample_count": 2,
+  "samples": [
+    {
+      "name": "sample-000",
+      "timestamp_utc": "2026-02-25T16:37:37Z"
+    },
+    {
+      "name": "sample-001",
+      "timestamp_utc": "2026-02-25T16:37:40Z"
+    }
+  ],
+  "selected_map_ids": {
+    "ctl_array": 6,
+    "vip_map": 7
+  },
+  "selection": {
+    "balancer_program": null,
+    "dump_policy": {
+      "hash_only_maps": [
+        {
+          "id": 6,
+          "max_entries": 16,
+          "name": "ctl_array",
+          "reason": "max_entries>1"
+        },
+        {
+          "id": 7,
+          "max_entries": 512,
+          "name": "vip_map",
+          "reason": "max_entries>1"
+        }
+      ],
+      "max_map_dump_entries": 1,
+      "skip_large_map_dumps": true
+    },
+    "duplicate_map_name_ids": {},
+    "mode": "named",
+    "requested_missing": []
+  }
+}

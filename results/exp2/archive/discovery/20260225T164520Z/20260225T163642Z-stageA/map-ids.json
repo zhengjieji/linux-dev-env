@@ -1,0 +1,66 @@
+{
+  "balancer_program": null,
+  "dump_policy": {
+    "hash_only_maps": [
+      {
+        "id": 6,
+        "max_entries": 16,
+        "name": "ctl_array",
+        "reason": "max_entries>1"
+      },
+      {
+        "id": 7,
+        "max_entries": 512,
+        "name": "vip_map",
+        "reason": "max_entries>1"
+      }
+    ],
+    "max_map_dump_entries": 1,
+    "skip_large_map_dumps": true
+  },
+  "duplicates": {},
+  "missing": [],
+  "selected_map_ids": {
+    "ctl_array": 6,
+    "vip_map": 7
+  },
+  "selected_maps": [
+    {
+      "id": 6,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 392,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 6,
+        "max_entries": 16,
+        "name": "ctl_array",
+        "type": "array"
+      },
+      "name": "ctl_array",
+      "policy_reason": "max_entries>1",
+      "sampling_mode": "hash_only"
+    },
+    {
+      "id": 7,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 20,
+        "bytes_memlock": 50464,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 7,
+        "max_entries": 512,
+        "name": "vip_map",
+        "type": "hash"
+      },
+      "name": "vip_map",
+      "policy_reason": "max_entries>1",
+      "sampling_mode": "hash_only"
+    }
+  ],
+  "selection_mode": "named"
+}

@@ -1,0 +1,181 @@
+{
+  "format_version": 3,
+  "generated_at_utc": "2026-02-25T16:29:19Z",
+  "map_summary": [
+    {
+      "analysis_status": "analyzed",
+      "entry_keys_present_in_all_samples": 0,
+      "entry_keys_union": 0,
+      "final_dump_hash_match": 0,
+      "final_dump_used": 0,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "invariant_entries": 0,
+      "map_hash": "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f",
+      "map_id": 6,
+      "map_invariant": 1,
+      "map_name": "ctl_array",
+      "policy_reason": "max_entries>1",
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only",
+      "unique_map_hashes": 1
+    },
+    {
+      "analysis_status": "analyzed",
+      "entry_keys_present_in_all_samples": 0,
+      "entry_keys_union": 0,
+      "final_dump_hash_match": 0,
+      "final_dump_used": 0,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "invariant_entries": 0,
+      "map_hash": "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe",
+      "map_id": 7,
+      "map_invariant": 1,
+      "map_name": "vip_map",
+      "policy_reason": "max_entries>1",
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only",
+      "unique_map_hashes": 1
+    }
+  ],
+  "maps": [
+    {
+      "analysis_status": "analyzed",
+      "entry_analysis": {
+        "entry_keys_present_in_all_samples": 0,
+        "entry_keys_union": 0,
+        "invariant_entries": [],
+        "invariant_entry_count": 0
+      },
+      "final_dump_file": "",
+      "final_dump_hash_match": false,
+      "final_dump_used": false,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "map_hash": "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f",
+      "map_hashes": [
+        "f4ecf94f38b17f308407704ce2b05ae6647616b05c079e7ff3e162ea13b66f3f"
+      ],
+      "map_id": 6,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 4,
+        "bytes_memlock": 392,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 6,
+        "max_entries": 16,
+        "name": "ctl_array",
+        "type": "array"
+      },
+      "map_invariant": true,
+      "map_value": null,
+      "missing_sample_names": [],
+      "name": "ctl_array",
+      "policy_reason": "max_entries>1",
+      "present_sample_names": [
+        "sample-000",
+        "sample-001"
+      ],
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only"
+    },
+    {
+      "analysis_status": "analyzed",
+      "entry_analysis": {
+        "entry_keys_present_in_all_samples": 0,
+        "entry_keys_union": 0,
+        "invariant_entries": [],
+        "invariant_entry_count": 0
+      },
+      "final_dump_file": "",
+      "final_dump_hash_match": false,
+      "final_dump_used": false,
+      "hash_method": "raw_json_sha256",
+      "hash_only_samples": 2,
+      "map_hash": "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe",
+      "map_hashes": [
+        "89651d0d7563e29a79243b23665ad11dbac051a9370847f8a6c4a0af4d6db3fe"
+      ],
+      "map_id": 7,
+      "map_info": {
+        "btf_id": 12,
+        "bytes_key": 20,
+        "bytes_memlock": 50464,
+        "bytes_value": 8,
+        "flags": 0,
+        "frozen": 0,
+        "id": 7,
+        "max_entries": 512,
+        "name": "vip_map",
+        "type": "hash"
+      },
+      "map_invariant": true,
+      "map_value": null,
+      "missing_sample_names": [],
+      "name": "vip_map",
+      "policy_reason": "max_entries>1",
+      "present_sample_names": [
+        "sample-000",
+        "sample-001"
+      ],
+      "samples_missing": 0,
+      "samples_present": 2,
+      "samples_total": 2,
+      "sampling_mode": "hash_only"
+    }
+  ],
+  "oracle_candidates": {
+    "entry_level_invariant_map_count": 0,
+    "entry_level_invariants": [],
+    "map_level_invariant_count": 0,
+    "map_level_invariants": []
+  },
+  "sample_count": 2,
+  "samples": [
+    {
+      "name": "sample-000",
+      "timestamp_utc": "2026-02-25T16:29:15Z"
+    },
+    {
+      "name": "sample-001",
+      "timestamp_utc": "2026-02-25T16:29:17Z"
+    }
+  ],
+  "selected_map_ids": {
+    "ctl_array": 6,
+    "vip_map": 7
+  },
+  "selection": {
+    "balancer_program": null,
+    "dump_policy": {
+      "hash_only_maps": [
+        {
+          "id": 6,
+          "max_entries": 16,
+          "name": "ctl_array",
+          "reason": "max_entries>1"
+        },
+        {
+          "id": 7,
+          "max_entries": 512,
+          "name": "vip_map",
+          "reason": "max_entries>1"
+        }
+      ],
+      "max_map_dump_entries": 1,
+      "skip_large_map_dumps": true
+    },
+    "duplicate_map_name_ids": {},
+    "mode": "named",
+    "requested_missing": []
+  }
+}

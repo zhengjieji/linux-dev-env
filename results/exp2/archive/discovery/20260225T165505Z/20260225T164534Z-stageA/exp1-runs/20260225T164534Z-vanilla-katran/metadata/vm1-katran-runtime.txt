@@ -1,0 +1,5 @@
+iface=eth1
+4: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:aa:00:11 brd ff:ff:ff:ff:ff:ff promiscuity 0  allmulti 0 minmtu 68 maxmtu 65535 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 parentbus virtio parentdev virtio4 
+    prog/xdp id 6 name balancer_ingres tag cf7421112865bdca jited load_time 33354862851 created_by_uid 0 btf_id 12 
+LISTEN 0      0      [::ffff:127.0.0.1]:50051            *:*    users:(("katran_server_g",pid=658,fd=34))                                                                                 
