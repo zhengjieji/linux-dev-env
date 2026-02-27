@@ -597,11 +597,27 @@ def generate_header(
         fp.write("}\n\n")
 
         # ch_rings
+        uniform_ring_value: dict[int, int] = {}
+        for vip in active_vips:
+            seg = ch_segments[vip]
+            if seg:
+                first = seg[0]
+                if all(v == first for v in seg):
+                    uniform_ring_value[vip] = first
+
         fp.write("#ifndef EXP2_ORACLE_DISABLE_CH_RING_HARDCODE\n")
         for vip in active_vips:
-            fp.write(f"static const __u32 exp2_oracle_ring_vip_{vip}[EXP2_ORACLE_RING_SIZE] = {{\n")
-            write_values_array(fp, ch_segments[vip])
-            fp.write("};\n\n")
+            if vip in uniform_ring_value:
+                fp.write(
+                    f"static const __u32 exp2_oracle_ring_vip_{vip}_uniform = "
+                    f"{c_u32(uniform_ring_value[vip])};\n"
+                )
+            else:
+                fp.write(f"static const __u32 exp2_oracle_ring_vip_{vip}[EXP2_ORACLE_RING_SIZE] = {{\n")
+                write_values_array(fp, ch_segments[vip])
+                fp.write("};\n\n")
+        if uniform_ring_value:
+            fp.write("\n")
 
         fp.write("__attribute__((__always_inline__)) static inline bool\n")
         fp.write("exp2_oracle_lookup_ch_ring(__u32 vip_num, __u32 hash, __u32* real_pos) {\n")
@@ -609,10 +625,18 @@ def generate_header(
         fp.write("    return false;\n")
         fp.write("  }\n")
         fp.write("  __u32 idx = hash % EXP2_ORACLE_RING_SIZE;\n")
+        # Keep an explicit post-modulo bounds check to satisfy conservative
+        # verifier range tracking for large static arrays.
+        fp.write("  if (idx >= EXP2_ORACLE_RING_SIZE) {\n")
+        fp.write("    return false;\n")
+        fp.write("  }\n")
         fp.write("  switch (vip_num) {\n")
         for vip in active_vips:
             fp.write(f"  case {c_u32(vip)}:\n")
-            fp.write(f"    *real_pos = exp2_oracle_ring_vip_{vip}[idx];\n")
+            if vip in uniform_ring_value:
+                fp.write(f"    *real_pos = exp2_oracle_ring_vip_{vip}_uniform;\n")
+            else:
+                fp.write(f"    *real_pos = exp2_oracle_ring_vip_{vip}[idx];\n")
             fp.write("    return true;\n")
         fp.write("  default:\n")
         fp.write("    return false;\n")

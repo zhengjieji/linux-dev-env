@@ -1,8 +1,0 @@
-I20260225 03:41:31.756006  1460 KatranGrpcService.cpp:69] Starting Katran
-E20260225 03:41:31.758131  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping unrecognized data section(17) .eh_frame
-E20260225 03:41:31.758348  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping relo section(18) .rel.eh_frame for section(17) .eh_frame
-E20260225 03:41:31.760005  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping unrecognized data section(17) .eh_frame
-E20260225 03:41:31.760169  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping relo section(18) .rel.eh_frame for section(17) .eh_frame
-E20260225 03:41:31.793356  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping unrecognized data section(17) .eh_frame
-E20260225 03:41:31.793617  1460 BaseBpfAdapter.cpp:144] libbpf: elf: skipping relo section(18) .rel.eh_frame for section(17) .eh_frame
-Server listening on 127.0.0.1:50051

@@ -58,6 +58,17 @@ KATRAN_LIB_DIRS="${EXP1_KATRAN_LIB_DIRS:-/linux-dev-env/source/katran/_build/dep
 KATRAN_AUTO_BUILD="${EXP1_KATRAN_AUTO_BUILD:-1}"
 KATRAN_BUILD_SCRIPT="${EXP1_KATRAN_BUILD_SCRIPT:-${SCRIPT_DIR}/build-katran.sh}"
 KATRAN_REQUIRED_BPF_DEFINE="${EXP1_KATRAN_REQUIRED_BPF_DEFINE:-LOCAL_DELIVERY_OPTIMIZATION}"
+KATRAN_LOCAL_DELIVERY_FLAGS="${EXP1_KATRAN_LOCAL_DELIVERY_FLAGS:-1}"
+
+# Keep original default build behavior, but when forcing heavy path
+# (LOCAL_DELIVERY flags disabled), ensure inline IPIP decap is available.
+if [ "${KATRAN_LOCAL_DELIVERY_FLAGS}" = "0" ]; then
+	if ! printf '%s\n' "${KATRAN_REQUIRED_BPF_DEFINE}" | tr ' ' '\n' | grep -Fxq "INLINE_DECAP_IPIP"; then
+		KATRAN_REQUIRED_BPF_DEFINE="${KATRAN_REQUIRED_BPF_DEFINE} INLINE_DECAP_IPIP"
+		KATRAN_REQUIRED_BPF_DEFINE="${KATRAN_REQUIRED_BPF_DEFINE#"${KATRAN_REQUIRED_BPF_DEFINE%%[![:space:]]*}"}"
+		echo "[exp1] katran heavy path enabled: auto-appended required BPF define INLINE_DECAP_IPIP" >&2
+	fi
+fi
 
 WRK_THREADS="${EXP1_WRK_THREADS:-4}"
 WRK_CONNECTIONS="${EXP1_WRK_CONNECTIONS:-1 2 4 8 16 32}"
@@ -107,6 +118,7 @@ RUN_RESULT_DIRS=()
 RUN_KINDS=()
 VMS_STARTED=0
 KATRAN_ACTIVE=0
+KATRAN_FORWARDER_ACTIVE=0
 PROGRESS_TOTAL_STEPS=0
 PROGRESS_DONE_STEPS=0
 PROGRESS_START_TS=0
@@ -168,6 +180,7 @@ Options:
 
   --katran-vip <ipv4>         VIP for Katran mode (default: ${KATRAN_VIP})
   --katran-auto-build <0|1>   Auto-build Katran artifacts if missing (default: ${KATRAN_AUTO_BUILD})
+  --katran-local-delivery-flags <0|1>  Add LOCAL_VIP/LOCAL_REAL flags in Katran setup (default: ${KATRAN_LOCAL_DELIVERY_FLAGS})
 
   -h, --help                  Show this help
 
@@ -435,6 +448,7 @@ validate_args() {
 	esac
 
 	is_bool_01 "${KATRAN_AUTO_BUILD}" || fail "KATRAN_AUTO_BUILD must be 0 or 1"
+	is_bool_01 "${KATRAN_LOCAL_DELIVERY_FLAGS}" || fail "KATRAN_LOCAL_DELIVERY_FLAGS must be 0 or 1"
 	is_bool_01 "${WRK2_AUTO_BUILD}" || fail "WRK2_AUTO_BUILD must be 0 or 1"
 	validate_mode
 	validate_workloads
@@ -743,9 +757,63 @@ EOF_VM1_KATRAN_CLEANUP
 	KATRAN_ACTIVE=0
 }
 
+prepare_katran_forwarder_vm2() {
+	if [ "${KATRAN_LOCAL_DELIVERY_FLAGS}" != "0" ]; then
+		return 0
+	fi
+	log "[${RUN_KIND}] enabling vm2 forwarding for katran heavy path"
+	ssh_vm_script vm2 <<'EOF_VM2_KATRAN_FORWARDER'
+set -euo pipefail
+sysctl -w net.ipv4.ip_forward=1 >/dev/null
+for f in /proc/sys/net/ipv4/conf/*/rp_filter; do
+	echo 0 >"${f}" || true
+done
+EOF_VM2_KATRAN_FORWARDER
+	KATRAN_FORWARDER_ACTIVE=1
+}
+
+cleanup_katran_forwarder_vm2() {
+	if [ "${VMS_STARTED}" -ne 1 ] || [ "${KATRAN_FORWARDER_ACTIVE}" -ne 1 ]; then
+		return 0
+	fi
+	ssh_vm_script vm2 <<'EOF_VM2_KATRAN_FORWARDER_CLEANUP'
+set -euo pipefail
+sysctl -w net.ipv4.ip_forward=0 >/dev/null || true
+EOF_VM2_KATRAN_FORWARDER_CLEANUP
+	KATRAN_FORWARDER_ACTIVE=0
+}
+
+katran_marker_has_required_bpf_defines() {
+	local marker_file="$1"
+	local required_token
+	local normalized_token
+	[ -f "${marker_file}" ] || return 1
+	for required_token in ${KATRAN_REQUIRED_BPF_DEFINE}; do
+		normalized_token="${required_token#-D}"
+		[ -n "${normalized_token}" ] || continue
+		grep -qw -- "${normalized_token}" "${marker_file}" || return 1
+	done
+	return 0
+}
+
+katran_build_defines_from_required() {
+	local required_token
+	local normalized_token
+	local define_flags=""
+	for required_token in ${KATRAN_REQUIRED_BPF_DEFINE}; do
+		normalized_token="${required_token#-D}"
+		[ -n "${normalized_token}" ] || continue
+		define_flags="${define_flags} -D${normalized_token}"
+	done
+	echo "${define_flags# }"
+}
+
 cleanup() {
 	if [ "${KATRAN_ACTIVE}" -eq 1 ]; then
 		cleanup_katran_vm1 || true
+	fi
+	if [ "${KATRAN_FORWARDER_ACTIVE}" -eq 1 ]; then
+		cleanup_katran_forwarder_vm2 || true
 	fi
 	if [ "${VMS_STARTED}" -ne 1 ]; then
 		return 0
@@ -928,6 +996,11 @@ parse_args() {
 				KATRAN_AUTO_BUILD="$2"
 				shift 2
 				;;
+			--katran-local-delivery-flags)
+				[ $# -gt 1 ] || fail "--katran-local-delivery-flags requires a value"
+				KATRAN_LOCAL_DELIVERY_FLAGS="$2"
+				shift 2
+				;;
 			-h|--help)
 				usage
 				exit 0
@@ -966,6 +1039,7 @@ katran_goclient_bin_vm=${KATRAN_GOCLIENT_BIN_VM}
 katran_lib_dirs=${KATRAN_LIB_DIRS}
 katran_auto_build=${KATRAN_AUTO_BUILD}
 katran_required_bpf_define=${KATRAN_REQUIRED_BPF_DEFINE}
+katran_local_delivery_flags=${KATRAN_LOCAL_DELIVERY_FLAGS}
 wrk_threads=${WRK_THREADS}
 wrk_connections=${WRK_CONNECTIONS}
 wrk_warmup=${WRK_WARMUP}
@@ -1328,9 +1402,9 @@ ensure_katran_artifacts() {
 		need_build=1
 		build_reason="artifacts missing"
 	elif [ -n "${KATRAN_REQUIRED_BPF_DEFINE}" ]; then
-		if [ ! -f "${bpf_define_marker_host}" ] || ! grep -qw -- "${KATRAN_REQUIRED_BPF_DEFINE}" "${bpf_define_marker_host}"; then
+		if ! katran_marker_has_required_bpf_defines "${bpf_define_marker_host}"; then
 			need_build=1
-			build_reason="bpf missing required define '${KATRAN_REQUIRED_BPF_DEFINE}'"
+			build_reason="bpf missing required define(s) '${KATRAN_REQUIRED_BPF_DEFINE}'"
 		fi
 	fi
 
@@ -1345,7 +1419,9 @@ ensure_katran_artifacts() {
 	[ -x "${KATRAN_BUILD_SCRIPT}" ] || fail "katran build script missing or not executable: ${KATRAN_BUILD_SCRIPT}"
 	log "Katran artifacts missing/outdated (${build_reason}); running one-time build"
 	if [ -n "${KATRAN_REQUIRED_BPF_DEFINE}" ]; then
-		EXP1_KATRAN_BPF_DEFINES="-D${KATRAN_REQUIRED_BPF_DEFINE}" "${KATRAN_BUILD_SCRIPT}"
+		local katran_bpf_defines
+		katran_bpf_defines="$(katran_build_defines_from_required)"
+		EXP1_KATRAN_BPF_DEFINES="${katran_bpf_defines}" "${KATRAN_BUILD_SCRIPT}"
 	else
 		"${KATRAN_BUILD_SCRIPT}"
 	fi
@@ -1355,8 +1431,8 @@ ensure_katran_artifacts() {
 	[ -x "${katran_goclient_bin_host}" ] || fail "missing katran gRPC client after build: ${katran_goclient_bin_host}"
 	if [ -n "${KATRAN_REQUIRED_BPF_DEFINE}" ]; then
 		[ -f "${bpf_define_marker_host}" ] || fail "missing katran bpf define marker after build: ${bpf_define_marker_host}"
-		grep -qw -- "${KATRAN_REQUIRED_BPF_DEFINE}" "${bpf_define_marker_host}" || \
-			fail "katran bpf define marker missing '${KATRAN_REQUIRED_BPF_DEFINE}': ${bpf_define_marker_host}"
+		katran_marker_has_required_bpf_defines "${bpf_define_marker_host}" || \
+			fail "katran bpf define marker missing required define(s) '${KATRAN_REQUIRED_BPF_DEFINE}': ${bpf_define_marker_host}"
 	fi
 }
 
@@ -1375,7 +1451,8 @@ prepare_katran_vm1() {
 		"${KATRAN_GOCLIENT_BIN_VM}" \
 		"${KATRAN_LIB_DIRS}" \
 		"${KATRAN_CPUSET}" \
-		"${SKIP_INSTALL}" <<'EOF_VM1_KATRAN'
+		"${SKIP_INSTALL}" \
+		"${KATRAN_LOCAL_DELIVERY_FLAGS}" <<'EOF_VM1_KATRAN'
 set -euo pipefail
 
 server_ip="$1"
@@ -1391,6 +1468,7 @@ katran_goclient_bin="${10}"
 katran_lib_dirs="${11}"
 katran_cpuset="${12}"
 skip_install="${13}"
+katran_local_delivery_flags="${14}"
 
 ensure_packages() {
 	missing=()
@@ -1522,8 +1600,13 @@ if [ "${ready}" -ne 1 ]; then
 fi
 
 "${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -C >/tmp/exp1-katran-clear.log 2>&1 || true
-"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -A -t "${katran_vip}:${server_port}" -vf LOCAL_VIP >/tmp/exp1-katran-add-vip.log 2>&1
-"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -a -t "${katran_vip}:${server_port}" -r "${server_ip}" -rf LOCAL_REAL >/tmp/exp1-katran-add-real.log 2>&1
+if [ "${katran_local_delivery_flags}" = "1" ]; then
+	"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -A -t "${katran_vip}:${server_port}" -vf LOCAL_VIP >/tmp/exp1-katran-add-vip.log 2>&1
+	"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -a -t "${katran_vip}:${server_port}" -r "${server_ip}" -rf LOCAL_REAL >/tmp/exp1-katran-add-real.log 2>&1
+else
+	"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -A -t "${katran_vip}:${server_port}" >/tmp/exp1-katran-add-vip.log 2>&1
+	"${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -a -t "${katran_vip}:${server_port}" -r "${server_ip}" >/tmp/exp1-katran-add-real.log 2>&1
+fi
 "${katran_goclient_bin}" -server "127.0.0.1:${grpc_port}" -l >/tmp/exp1-katran-list.log 2>&1
 EOF_VM1_KATRAN
 	KATRAN_ACTIVE=1
@@ -2348,6 +2431,7 @@ run_single_kind() {
 	prepare_server_vm1
 	if [ "${RUN_KIND}" = "vanilla-katran" ]; then
 		prepare_katran_vm1
+		prepare_katran_forwarder_vm2
 	fi
 	run_sanity_checks "${target_ip}"
 	collect_metadata
@@ -2366,6 +2450,7 @@ run_single_kind() {
 	archive_old_runs
 	if [ "${RUN_KIND}" = "vanilla-katran" ]; then
 		cleanup_katran_vm1
+		cleanup_katran_forwarder_vm2
 	fi
 
 	RUN_RESULT_DIRS+=("${RESULT_DIR}")
