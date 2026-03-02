@@ -26,6 +26,7 @@ KEEP_INVARIANT_HASH_ONLY_DUMP="${EXP2_STAGEA_KEEP_INVARIANT_HASH_ONLY_DUMP:-1}"
 
 VM1_SSH_PORT="${DUAL_VM1_SSH_PORT:-53022}"
 VM2_SSH_PORT="${DUAL_VM2_SSH_PORT:-53122}"
+SAMPLE_SSH_PORT="${EXP2_STAGEA_SAMPLE_SSH_PORT:-${VM1_SSH_PORT}}"
 BPFTOOL_BIN="${EXP2_STAGEA_BPFTOOL_BIN:-bpftool}"
 EXP1_SKIP_INSTALL="${EXP2_STAGEA_SKIP_INSTALL:-0}"
 SSH_RETRIES="${EXP2_STAGEA_SSH_RETRIES:-4}"
@@ -70,6 +71,7 @@ Options:
   --results-base <path>                  discovery output base dir
   --vm1-ssh-port <port>                  vm1 ssh port (default: 53022)
   --vm2-ssh-port <port>                  vm2 ssh port (default: 53122)
+  --sample-ssh-port <port>               ssh port of VM used for map sampling/bpftool (default: vm1 ssh port)
   --skip-install <0|1>                   pass through to exp1 (default: 0)
   --exp1-arg "<arg>"                     append one extra arg to exp1 run.sh (repeatable)
   --run-id <id>                          custom run id (default: utc timestamp)
@@ -138,7 +140,7 @@ ssh_vm_port() {
 }
 
 ssh_vm1() {
-	ssh_vm_port "${VM1_SSH_PORT}" "$@"
+	ssh_vm_port "${SAMPLE_SSH_PORT}" "$@"
 }
 
 ssh_vm2() {
@@ -237,7 +239,7 @@ stop_exp1_if_running() {
 	fi
 }
 
-ensure_vm1_bpftool() {
+ensure_sample_vm_bpftool() {
 	install_bpftool_from_host() {
 		local host_bpftool=""
 		local candidate=""
@@ -255,7 +257,7 @@ ensure_vm1_bpftool() {
 			fi
 		fi
 		[ -n "${host_bpftool}" ] || return 1
-		log "installing bpftool in vm1 from host binary: ${host_bpftool}"
+		log "installing bpftool in sample VM from host binary: ${host_bpftool}"
 		scp_to_vm1 "${host_bpftool}" /tmp/exp2-bpftool || return 1
 		ssh_vm1 "install -m 0755 /tmp/exp2-bpftool /usr/local/sbin/bpftool && rm -f /tmp/exp2-bpftool" || return 1
 		BPFTOOL_BIN="/usr/local/sbin/bpftool"
@@ -266,9 +268,9 @@ ensure_vm1_bpftool() {
 		return 0
 	fi
 	if [ "${EXP1_SKIP_INSTALL}" -eq 1 ]; then
-		fail "bpftool not found in vm1 (${BPFTOOL_BIN}) and --skip-install=1"
+		fail "bpftool not found in sample VM (${BPFTOOL_BIN}) and --skip-install=1"
 	fi
-	log "bpftool not found in vm1; installing via apt"
+	log "bpftool not found in sample VM; installing via apt"
 	local attempt=1
 	local max_attempts=20
 	while [ "${attempt}" -le "${max_attempts}" ]; do
@@ -288,14 +290,14 @@ ensure_vm1_bpftool() {
 			fi
 		fi
 		echo "${apt_tail}" >&2
-		fail "failed to install bpftool in vm1"
+		fail "failed to install bpftool in sample VM"
 	done
 	if [ "${attempt}" -gt "${max_attempts}" ]; then
 		ssh_vm1 "tail -n 120 /tmp/exp2-apt-bpftool.log 2>/dev/null || true" >&2 || true
-		fail "timed out waiting apt lock while installing bpftool in vm1"
+		fail "timed out waiting apt lock while installing bpftool in sample VM"
 	fi
 	ssh_vm1 "command -v ${BPFTOOL_BIN} >/dev/null 2>&1" || \
-		fail "bpftool still unavailable in vm1 after install"
+		fail "bpftool still unavailable in sample VM after install"
 }
 
 stop_dual_vms() {
@@ -415,6 +417,11 @@ parse_args() {
 				VM2_SSH_PORT="$2"
 				shift 2
 				;;
+			--sample-ssh-port)
+				[ $# -gt 1 ] || fail "--sample-ssh-port requires value"
+				SAMPLE_SSH_PORT="$2"
+				shift 2
+				;;
 			--skip-install)
 				[ $# -gt 1 ] || fail "--skip-install requires value"
 				EXP1_SKIP_INSTALL="$2"
@@ -464,6 +471,7 @@ validate_args() {
 	SAMPLE_COUNT="$(normalize_quoted "${SAMPLE_COUNT}")"
 	VM1_SSH_PORT="$(normalize_quoted "${VM1_SSH_PORT}")"
 	VM2_SSH_PORT="$(normalize_quoted "${VM2_SSH_PORT}")"
+	SAMPLE_SSH_PORT="$(normalize_quoted "${SAMPLE_SSH_PORT}")"
 	EXP1_SKIP_INSTALL="$(normalize_quoted "${EXP1_SKIP_INSTALL}")"
 	SAMPLE_MAPS="$(normalize_quoted "${SAMPLE_MAPS}")"
 	BALANCER_PROG_NAME="$(normalize_quoted "${BALANCER_PROG_NAME}")"
@@ -490,6 +498,7 @@ validate_args() {
 	is_pos_int "${MAX_MAP_DUMP_ENTRIES}" || fail "--max-map-dump-entries must be positive int"
 	is_pos_int "${VM1_SSH_PORT}" || fail "--vm1-ssh-port must be positive int"
 	is_pos_int "${VM2_SSH_PORT}" || fail "--vm2-ssh-port must be positive int"
+	is_pos_int "${SAMPLE_SSH_PORT}" || fail "--sample-ssh-port must be positive int"
 	is_pos_int "${SSH_RETRIES}" || fail "ssh retries must be positive int"
 	is_pos_int "${SSH_RETRY_DELAY_SECS}" || fail "ssh retry delay must be positive int"
 	is_pos_int "${SSH_RECOVER_WAIT_SECS}" || fail "ssh recover wait must be positive int"
@@ -543,6 +552,7 @@ skip_large_map_dumps=${SKIP_LARGE_MAP_DUMPS}
 keep_invariant_hash_only_dump=${KEEP_INVARIANT_HASH_ONLY_DUMP}
 vm1_ssh_port=${VM1_SSH_PORT}
 vm2_ssh_port=${VM2_SSH_PORT}
+sample_ssh_port=${SAMPLE_SSH_PORT}
 ssh_retries=${SSH_RETRIES}
 ssh_retry_delay_secs=${SSH_RETRY_DELAY_SECS}
 ssh_recover_wait_secs=${SSH_RECOVER_WAIT_SECS}
@@ -553,8 +563,8 @@ EOF_CFG
 collect_map_ids() {
 	local map_show_json="${RUN_DIR}/map-show-start.json"
 	local prog_show_json="${RUN_DIR}/prog-show-start.json"
-	ssh_vm1 "${BPFTOOL_BIN} -j map show" >"${map_show_json}" || fail "failed to collect map show from vm1"
-	ssh_vm1 "${BPFTOOL_BIN} -j prog show" >"${prog_show_json}" || fail "failed to collect prog show from vm1"
+	ssh_vm1 "${BPFTOOL_BIN} -j map show" >"${map_show_json}" || fail "failed to collect map show from sample VM"
+	ssh_vm1 "${BPFTOOL_BIN} -j prog show" >"${prog_show_json}" || fail "failed to collect prog show from sample VM"
 
 	python3 - "${map_show_json}" "${prog_show_json}" "${SAMPLE_MAPS}" "${BALANCER_PROG_NAME}" "${RUN_DIR}/map-ids.json" "${MAX_MAP_DUMP_ENTRIES}" "${SKIP_LARGE_MAP_DUMPS}" <<'PY'
 import json
@@ -898,11 +908,11 @@ main() {
 	sleep "${STEADY_WARMUP_SECS}"
 	if ! wait_vm1_ssh 120; then
 		tail -n 120 "${LOG_FILE}" >&2 || true
-		fail "vm1 ssh not reachable on port ${VM1_SSH_PORT} when entering sampling window"
+		fail "sample VM ssh not reachable on port ${SAMPLE_SSH_PORT} when entering sampling window"
 	fi
-	ensure_vm1_bpftool
+	ensure_sample_vm_bpftool
 
-	log "collecting map ids from vm1 (${SAMPLE_MAPS})"
+	log "collecting map ids from sample VM port ${SAMPLE_SSH_PORT} (${SAMPLE_MAPS})"
 	collect_map_ids
 
 	local sample_i

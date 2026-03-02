@@ -2,7 +2,6 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-GEN_SCRIPT="${EXP2_ORACLE_GEN_SCRIPT:-${ROOT_DIR}/scripts/exp2/generate-oracle.py}"
 KATRAN_BUILD_SCRIPT="${EXP2_ORACLE_KATRAN_BUILD_SCRIPT:-${ROOT_DIR}/scripts/exp1/build-katran.sh}"
 
 DISCOVERY_BASE="${EXP2_RESULTS_BASE:-${ROOT_DIR}/results/exp2/discovery}"
@@ -11,7 +10,7 @@ SPEC_FILE="${EXP2_ORACLE_SPEC:-}"
 RUN_ID="${EXP2_ORACLE_RUN_ID:-}"
 
 RING_SIZE="${EXP2_ORACLE_RING_SIZE:-65537}"
-GENERATED_HEADER="${EXP2_ORACLE_GENERATED_HEADER:-${ROOT_DIR}/source/katran/katran/lib/bpf/oracle/exp2_oracle_generated.h}"
+GENERATED_HEADER="${EXP2_ORACLE_GENERATED_HEADER:-${ROOT_DIR}/source/katran/katran/lib/bpf/oracle/exp2_oracle_handwritten.h}"
 KATRAN_SRC_DIR="${EXP2_ORACLE_KATRAN_SRC_DIR:-${ROOT_DIR}/source/katran}"
 KATRAN_BUILD_DIR="${EXP2_ORACLE_KATRAN_BUILD_DIR:-${KATRAN_SRC_DIR}/_build_exp2_oracle}"
 BPF_DEFINES="${EXP2_ORACLE_BPF_DEFINES:--DLOCAL_DELIVERY_OPTIMIZATION -DEXP2_ORACLE_CH_RINGS}"
@@ -22,11 +21,11 @@ usage() {
 	cat <<'EOF_USAGE'
 Usage: scripts/exp2/build-oracle.sh [options]
 
-Generate and build Exp2 oracle Katran BPF artifacts.
+Build Exp2 oracle Katran artifacts with handwritten hardcode.
 
 Steps:
   1) Read Stage A specialization spec
-  2) Generate exp2_oracle_generated.h (all supported invariant maps + policy macros)
+  2) Use handwritten oracle header in source tree
   3) Build Katran in isolated build dir with EXP2_ORACLE_CH_RINGS define
 
 Options:
@@ -34,12 +33,12 @@ Options:
   --results-base <path>      output dir base (default: results/exp2/oracle)
   --run-id <id>              custom run id (default: utc timestamp)
   --ring-size <n>            ring size used by Katran compile-time constants (default: 65537)
-  --generated-header <path>  output generated header path
+  --generated-header <path>  handwritten oracle header path
   --katran-src-dir <path>    Katran source dir (default: source/katran)
   --katran-build-dir <path>  isolated Katran build dir for oracle (default: source/katran/_build_exp2_oracle)
   --bpf-defines "<defs>"     BPF defines passed to build-katran.sh
   --force-rebuild <0|1>      force clean rebuild for oracle build dir (default: 0)
-  --skip-build <0|1>         only generate header, skip Katran build (default: 0)
+  --skip-build <0|1>         only validate header/spec, skip Katran build (default: 0)
   -h, --help
 EOF_USAGE
 }
@@ -206,7 +205,6 @@ main() {
 	is_pos_int "${RING_SIZE}" || fail "--ring-size must be positive int"
 	is_bool_01 "${FORCE_REBUILD}" || fail "--force-rebuild must be 0 or 1"
 	is_bool_01 "${SKIP_BUILD}" || fail "--skip-build must be 0 or 1"
-	[ -f "${GEN_SCRIPT}" ] || fail "generator script not found: ${GEN_SCRIPT}"
 	[ -x "${KATRAN_BUILD_SCRIPT}" ] || fail "katran build script not executable: ${KATRAN_BUILD_SCRIPT}"
 
 	if [ -z "${SPEC_FILE}" ]; then
@@ -233,12 +231,27 @@ main() {
 
 	log "run id: ${RUN_ID}"
 	log "spec: ${spec_abs}"
-	log "generating oracle header: ${header_abs}"
-	python3 "${GEN_SCRIPT}" \
-		--spec "${spec_abs}" \
-		--output-header "${header_abs}" \
-		--meta-output "${run_dir}/oracle-meta.json" \
-		--ring-size "${RING_SIZE}"
+	log "using handwritten oracle header: ${header_abs}"
+	[ -f "${header_abs}" ] || fail "handwritten oracle header not found: ${header_abs}"
+	python3 - "${run_dir}/oracle-meta.json" "${spec_abs}" "${header_abs}" "${RING_SIZE}" <<'PY'
+import datetime as dt
+import json
+import pathlib
+import sys
+
+out = pathlib.Path(sys.argv[1])
+spec = pathlib.Path(sys.argv[2])
+hdr = pathlib.Path(sys.argv[3])
+ring_size = int(sys.argv[4])
+payload = {
+    "mode": "manual-handwritten",
+    "generated_at_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "spec_file": str(spec),
+    "header_file": str(hdr),
+    "ring_size": ring_size,
+}
+out.write_text(json.dumps(payload, indent=2, sort_keys=True))
+PY
 
 	if [ "${SKIP_BUILD}" -eq 0 ]; then
 		log "building isolated oracle Katran artifacts"
@@ -248,7 +261,7 @@ main() {
 		EXP1_KATRAN_BPF_DEFINES="${BPF_DEFINES}" \
 		"${KATRAN_BUILD_SCRIPT}"
 	else
-		log "skip build enabled; only header generated"
+		log "skip build enabled; header/spec validated only"
 	fi
 
 	write_artifacts_env "${run_dir}" "${spec_abs}" "${header_abs}" "${katran_src_abs}" "${katran_build_abs}"

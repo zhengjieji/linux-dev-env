@@ -111,3 +111,8 @@ Micro evidence is used to explain results (not as primary claims): BPF time, cod
 - **M3**: Automation closes a large fraction of the oracle gap; quantify closure and overhead; optionally add update/fallback behavior.
 
 ---
+
+## 8. Local design notes (Chinese)
+
+- `documents/exp-2-three-node-four-sets-design.md`  
+  3-node 拓扑 + 4 组对照（`direct` / `direct-forward` / `vanilla-katran` / `oracle-katran`）实现设计草案。
